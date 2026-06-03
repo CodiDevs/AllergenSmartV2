@@ -1,0 +1,58 @@
+# ===========================
+# AllergenSmart V2 - .gitignore
+# ===========================
+
+# === OS ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# === IDEs ===
+.vscode/
+.idea/
+*.code-workspace
+
+# === Frontend (React Native / Expo) ===
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+frontend/*.jks
+frontend/*.p8
+frontend/*.p12
+frontend/*.key
+frontend/*.mobileprovision
+frontend/*.orig.*
+frontend/ios/
+frontend/android/
+
+# === Backend (Python / FastAPI) ===
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/**/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+
+# === Environment Variables ===
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env
+
+# === Docker ===
+docker-compose.override.yml
+
+# === Supabase ===
+supabase/.temp/
+
+# === Misc ===
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
