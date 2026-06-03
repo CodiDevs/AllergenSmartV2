@@ -3,10 +3,11 @@ Router principal v1 — agrupa todos los endpoints bajo /api/v1
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import allergens, users, products, scan, reports
+from app.api.v1.endpoints import allergens, users, products, scan, reports, auth
 
 router = APIRouter(prefix="/api/v1")
 
+router.include_router(auth.router)
 router.include_router(allergens.router)
 router.include_router(users.router)
 router.include_router(products.router)

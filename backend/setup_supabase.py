@@ -84,4 +84,3 @@ async def run_setup():
     print("Supabase triggers and RLS policies setup successfully completed.")
 
 asyncio.run(run_setup())
-}
