@@ -1,0 +1,292 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{font-family:'Inter',sans-serif;padding:16px 0 28px;}
+.section-label{font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#8896B0;text-transform:uppercase;letter-spacing:1.2px;text-align:center;margin-bottom:6px;}
+.section-sub{font-size:10px;color:#B0BAD0;text-align:center;margin-bottom:16px;font-family:'Inter',sans-serif;}
+.phones-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;}
+
+.ph{width:210px;background:#FFFDF5;border-radius:32px;overflow:hidden;border:1.5px solid #FAC775;display:flex;flex-direction:column;}
+.tbar{display:flex;justify-content:space-between;padding:10px 14px 3px;font-size:9px;color:#8896B0;}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:5px 12px 4px;}
+.nav-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#633806;}
+.nav-icon{width:28px;height:28px;border-radius:8px;background:#FDF6E3;display:flex;align-items:center;justify-content:center;}
+
+/* hero amber */
+.res-hero{padding:14px 12px 10px;display:flex;flex-direction:column;align-items:center;background:#FDF6E3;}
+.res-badge{border-radius:20px;padding:3px 12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:10px;margin-bottom:6px;}
+.res-product{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#412402;text-align:center;margin-bottom:1px;}
+.res-brand{font-size:9px;color:#854F0B;margin-bottom:0;}
+
+/* confidence meter */
+.conf-wrap{margin:0 12px 8px;background:#fff;border:1px solid #FAC775;border-radius:12px;padding:9px 11px;}
+.conf-label{font-size:9px;color:#854F0B;font-weight:700;margin-bottom:6px;font-family:'Nunito',sans-serif;}
+.conf-bar-bg{background:#FDF6E3;border-radius:20px;height:6px;margin-bottom:4px;}
+.conf-bar-fill{height:6px;border-radius:20px;}
+.conf-row{display:flex;justify-content:space-between;align-items:center;}
+.conf-pct{font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;}
+.conf-hint{font-size:9px;color:#BA7517;}
+
+/* ocr preview blurry */
+.ocr-preview{margin:0 12px 8px;background:#FDF6E3;border:1px solid #FAC775;border-radius:12px;padding:8px 10px;}
+.ocr-preview-label{font-size:9px;font-weight:700;font-family:'Nunito',sans-serif;margin-bottom:4px;}
+.ocr-line{height:5px;border-radius:3px;margin-bottom:4px;background:#EF9F27;opacity:0.25;}
+.ocr-line.partial{background:#EF9F27;opacity:0.55;}
+.ocr-line-text{font-size:9px;color:#633806;line-height:1.6;font-family:'Inter',sans-serif;}
+.ocr-line-text .ok{color:#3A3A50;}
+.ocr-line-text .unk{background:#FAC775;color:#412402;border-radius:3px;padding:0 2px;font-weight:600;}
+.ocr-line-text .gap{background:#EF9F27;color:#412402;border-radius:3px;padding:0 2px;opacity:0.6;font-style:italic;}
+
+/* warning rows */
+.res-body{padding:0 12px 8px;display:flex;flex-direction:column;gap:5px;}
+.w-row{display:flex;align-items:flex-start;gap:7px;border-radius:10px;padding:7px 9px;background:#FDF6E3;border:1px solid #FAC775;}
+.w-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+.w-name{font-size:11px;font-weight:700;font-family:'Nunito',sans-serif;color:#633806;}
+.w-desc{font-size:9px;color:#854F0B;margin-top:1px;line-height:1.4;}
+.w-sev{font-size:9px;margin-left:auto;font-weight:700;border-radius:20px;padding:2px 7px;white-space:nowrap;flex-shrink:0;font-family:'Nunito',sans-serif;}
+
+/* tips box */
+.tips-box{margin:0 12px 8px;background:#fff;border:1px solid #FAC775;border-radius:12px;padding:8px 10px;}
+.tips-label{font-size:9px;font-weight:700;color:#854F0B;font-family:'Nunito',sans-serif;margin-bottom:5px;}
+.tip-row{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;}
+.tip-num{width:14px;height:14px;border-radius:50%;background:#EF9F27;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#412402;flex-shrink:0;font-family:'Nunito',sans-serif;}
+.tip-txt{font-size:9px;color:#633806;line-height:1.4;}
+
+/* action buttons */
+.action-btn{margin:2px 12px 0;border:none;border-radius:12px;padding:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;cursor:pointer;width:calc(100% - 24px);background:#EF9F27;color:#412402;}
+.sec-btn{margin:4px 12px 12px;border-radius:12px;padding:8px;font-family:'Nunito',sans-serif;font-weight:700;font-size:10px;cursor:pointer;width:calc(100% - 24px);background:#FDF6E3;border:1px solid #FAC775;color:#854F0B;}
+
+/* alergi amber mascot - shared path helper */
+</style>
+
+<div class="wrap">
+<h2 class="sr-only">SmartAllergen — dos estados de advertencia OCR: baja confianza por imagen borrosa y alérgenos no confirmados</h2>
+
+<div class="section-label">Estados de advertencia · Alergi amarillo</div>
+<div class="section-sub">Cuando el OCR no puede garantizar la lectura completa de la etiqueta</div>
+
+<div class="phones-row">
+
+  <!-- ══════════ WARNING A: IMAGEN BORROSA / BAJA CALIDAD ══════════ -->
+  <div class="ph">
+    <div class="tbar"><span>9:41</span><span>87%</span></div>
+    <div class="nav">
+      <div class="nav-icon">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="nav-title">Resultado</span>
+      <div class="nav-icon">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#EF9F27" stroke-width="1.4"/><path d="M8 7v4" stroke="#EF9F27" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5" r="0.8" fill="#EF9F27"/></svg>
+      </div>
+    </div>
+
+    <div class="res-hero">
+      <!-- Alergi amarillo sorprendido -->
+      <svg width="56" height="56" viewBox="0 0 80 88" style="margin-bottom:7px;">
+        <path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#EF9F27"/>
+        <ellipse cx="30" cy="34" rx="4" ry="7" fill="#FFD580" opacity="0.4" transform="rotate(-20 30 34)"/>
+        <!-- ojos muy abiertos, inciertos -->
+        <circle cx="33" cy="50" r="6.5" fill="white"/>
+        <circle cx="47" cy="50" r="6.5" fill="white"/>
+        <circle cx="33" cy="50" r="3.2" fill="#633806"/>
+        <circle cx="47" cy="50" r="3.2" fill="#633806"/>
+        <circle cx="34.2" cy="48.8" r="1.2" fill="white"/>
+        <circle cx="48.2" cy="48.8" r="1.2" fill="white"/>
+        <!-- cejas levantadas -->
+        <path d="M28 42 Q33 39 38 41" fill="none" stroke="#633806" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M42 41 Q47 39 52 42" fill="none" stroke="#633806" stroke-width="1.6" stroke-linecap="round"/>
+        <!-- boca "?" abierta -->
+        <ellipse cx="40" cy="61" rx="4.5" ry="3.2" fill="white" opacity="0.9"/>
+        <!-- signos de interrogación flotando -->
+        <text x="10" y="32" font-size="11" fill="#EF9F27" font-family="sans-serif" opacity="0.9">?</text>
+        <text x="62" y="28" font-size="9" fill="#EF9F27" font-family="sans-serif" opacity="0.7">?</text>
+        <text x="58" y="50" font-size="7" fill="#FAC775" font-family="sans-serif" opacity="0.8">?</text>
+      </svg>
+      <div class="res-badge" style="background:#FAC775;color:#412402;">PRECAUCION · IMAGEN POCO CLARA</div>
+      <div class="res-product">Producto sin identificar</div>
+      <div class="res-brand" style="margin-bottom:6px;">No se pudo leer la etiqueta completa</div>
+    </div>
+
+    <!-- Barra de confianza OCR -->
+    <div class="conf-wrap">
+      <div class="conf-label">Confianza de lectura OCR</div>
+      <div class="conf-bar-bg">
+        <div class="conf-bar-fill" style="width:34%;background:#EF9F27;"></div>
+      </div>
+      <div class="conf-row">
+        <span class="conf-pct" style="color:#EF9F27;">34%</span>
+        <span class="conf-hint">Minimo requerido: 75%</span>
+      </div>
+    </div>
+
+    <!-- Vista previa del texto extraído (borroso/incompleto) -->
+    <div class="ocr-preview">
+      <div class="ocr-preview-label" style="color:#854F0B;">Texto extraído — lectura parcial</div>
+      <div class="ocr-line-text">
+        <span class="ok">aceite de</span> <span class="gap">██████</span><span class="ok">, sal,</span><br>
+        <span class="gap">█████████</span> <span class="ok">azúcar,</span><br>
+        <span class="unk">lec?? entera</span><span class="ok">, e</span><span class="gap">████</span><span class="ok">...</span>
+      </div>
+    </div>
+
+    <!-- Consejos para mejorar el escaneo -->
+    <div class="tips-box">
+      <div class="tips-label">Cómo mejorar la lectura</div>
+      <div class="tip-row">
+        <div class="tip-num">1</div>
+        <div class="tip-txt">Acerca más la cámara a la etiqueta (10–15 cm)</div>
+      </div>
+      <div class="tip-row">
+        <div class="tip-num">2</div>
+        <div class="tip-txt">Busca mejor iluminación, evita reflejos</div>
+      </div>
+      <div class="tip-row" style="margin-bottom:0;">
+        <div class="tip-num">3</div>
+        <div class="tip-txt">Estabiliza el teléfono o apóyalo en una superficie</div>
+      </div>
+    </div>
+
+    <button class="action-btn">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="display:inline;vertical-align:-1px;margin-right:4px;"><path d="M14 8A6 6 0 112 8" stroke="#412402" stroke-width="1.8" stroke-linecap="round"/><path d="M14 4v4h-4" stroke="#412402" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Volver a escanear
+    </button>
+    <button class="sec-btn">Buscar producto manualmente</button>
+  </div>
+
+  <!-- ══════════ WARNING B: LECTURA PARCIAL · INGREDIENTES INCOMPLETOS ══════════ -->
+  <div class="ph">
+    <div class="tbar"><span>9:41</span><span>87%</span></div>
+    <div class="nav">
+      <div class="nav-icon">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="nav-title">Resultado</span>
+      <div class="nav-icon">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#EF9F27" stroke-width="1.4"/><path d="M8 7v4" stroke="#EF9F27" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5" r="0.8" fill="#EF9F27"/></svg>
+      </div>
+    </div>
+
+    <div class="res-hero">
+      <!-- Alergi amarillo con gota de sudor extra (más nervioso) -->
+      <svg width="56" height="56" viewBox="0 0 80 88" style="margin-bottom:7px;">
+        <path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#EF9F27"/>
+        <ellipse cx="30" cy="34" rx="4" ry="7" fill="#FFD580" opacity="0.4" transform="rotate(-20 30 34)"/>
+        <circle cx="33" cy="50" r="6" fill="white"/>
+        <circle cx="47" cy="50" r="6" fill="white"/>
+        <circle cx="33" cy="51" r="3" fill="#633806"/>
+        <circle cx="47" cy="51" r="3" fill="#633806"/>
+        <circle cx="34" cy="49.5" r="1.1" fill="white"/>
+        <circle cx="48" cy="49.5" r="1.1" fill="white"/>
+        <!-- cejas fruncidas de preocupación -->
+        <path d="M28 43 Q33 41 37 43" fill="none" stroke="#633806" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M43 43 Q47 41 52 43" fill="none" stroke="#633806" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- boca recta tensa -->
+        <path d="M35 61 Q40 60 45 61" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- gotas de sudor -->
+        <path d="M60 26 C60 26 58 30 61 32 C64 30 62 26 60 26Z" fill="#FFD580" opacity="0.8"/>
+        <path d="M65 38 C65 38 63.5 41 65.5 42.5 C67.5 41 66 38 65 38Z" fill="#FFD580" opacity="0.6"/>
+      </svg>
+      <div class="res-badge" style="background:#FAC775;color:#412402;">PRECAUCION · NO CONFIRMADO</div>
+      <div class="res-product">Galletas de Avena 150g</div>
+      <div class="res-brand" style="margin-bottom:6px;">Lectura: 68% · Zona cortada en imagen</div>
+    </div>
+
+    <!-- Barra de confianza OCR -->
+    <div class="conf-wrap">
+      <div class="conf-label">Confianza de lectura OCR</div>
+      <div class="conf-bar-bg">
+        <div class="conf-bar-fill" style="width:68%;background:#EF9F27;"></div>
+      </div>
+      <div class="conf-row">
+        <span class="conf-pct" style="color:#EF9F27;">68%</span>
+        <span class="conf-hint">Mínimo requerido: 75%</span>
+      </div>
+    </div>
+
+    <!-- Lo que sí se leyó vs lo que falta -->
+    <div class="ocr-preview">
+      <div class="ocr-preview-label" style="color:#854F0B;">Ingredientes leídos — zona faltante</div>
+      <div class="ocr-line-text">
+        <span class="ok">avena, aceite de coco, miel,</span><br>
+        <span class="ok">azúcar morena, sal —</span><br>
+        <span class="gap">[zona cortada: ~3 líneas]</span>
+      </div>
+    </div>
+
+    <!-- Alérgenos: los que se confirmaron vs los que no se pueden descartar -->
+    <div class="res-body">
+      <div class="w-row" style="background:#EAF7F2;border-color:#9FE1CB;">
+        <div class="w-dot" style="background:#24C8A0;"></div>
+        <div>
+          <div class="w-name" style="color:#085041;">Gluten</div>
+          <div class="w-desc" style="color:#0F6E56;">No detectado en zona leída</div>
+        </div>
+        <div class="w-sev" style="background:#9FE1CB;color:#04342C;">LEÍDO</div>
+      </div>
+      <div class="w-row">
+        <div class="w-dot" style="background:#EF9F27;"></div>
+        <div>
+          <div class="w-name">Lácteos</div>
+          <div class="w-desc">Zona faltante podría contenerlos</div>
+        </div>
+        <div class="w-sev" style="background:#FAC775;color:#412402;">NO CONF.</div>
+      </div>
+      <div class="w-row">
+        <div class="w-dot" style="background:#EF9F27;"></div>
+        <div>
+          <div class="w-name">Frutos secos</div>
+          <div class="w-desc">Zona faltante podría contenerlos</div>
+        </div>
+        <div class="w-sev" style="background:#FAC775;color:#412402;">NO CONF.</div>
+      </div>
+    </div>
+
+    <button class="action-btn">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="display:inline;vertical-align:-1px;margin-right:4px;"><path d="M14 8A6 6 0 112 8" stroke="#412402" stroke-width="1.8" stroke-linecap="round"/><path d="M14 4v4h-4" stroke="#412402" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Escanear zona faltante
+    </button>
+    <button class="sec-btn">Buscar producto en base de datos</button>
+  </div>
+
+</div>
+
+<!-- ── MAPA DE ESTADOS COMPLETO ── -->
+<div style="background:#F7F9FF;border-radius:18px;padding:16px 20px;">
+  <div class="section-label" style="margin-bottom:12px;text-align:left;">Mapa completo de estados del escáner</div>
+  <div style="display:flex;flex-direction:column;gap:7px;">
+
+    <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:8px 12px;border:1px solid #E2E8F5;">
+      <svg width="22" height="22" viewBox="0 0 80 88"><path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#5A7BFA"/><circle cx="33" cy="50" r="5" fill="white"/><circle cx="47" cy="50" r="5" fill="white"/><circle cx="34.5" cy="51" r="2.5" fill="#1A2D8C"/><circle cx="48.5" cy="51" r="2.5" fill="#1A2D8C"/><path d="M34 57 Q40 63 46 57" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      <div style="flex:1;"><div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#185FA5;">Procesando</div><div style="font-size:9px;color:#8896B0;">OCR en curso, análisis activo</div></div>
+      <div style="background:#E6F1FB;color:#0C447C;border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;font-family:'Nunito',sans-serif;">EN CURSO</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;background:#FEECEC;border-radius:10px;padding:8px 12px;border:1px solid #F7C1C1;">
+      <svg width="22" height="22" viewBox="0 0 80 88"><path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#E24B4A"/><line x1="29" y1="44" x2="37" y2="46" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="43" y1="46" x2="51" y2="44" stroke="white" stroke-width="1.8" stroke-linecap="round"/><circle cx="33" cy="50" r="5" fill="white"/><circle cx="47" cy="50" r="5" fill="white"/><circle cx="33" cy="51" r="2.5" fill="#791F1F"/><circle cx="47" cy="51" r="2.5" fill="#791F1F"/><path d="M34 60 Q40 55 46 60" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      <div style="flex:1;"><div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#791F1F;">Peligro</div><div style="font-size:9px;color:#A32D2D;">Alérgeno HIGH confirmado · no consumir</div></div>
+      <div style="background:#F7C1C1;color:#501313;border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;font-family:'Nunito',sans-serif;">HIGH</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;background:#FDF6E3;border-radius:10px;padding:8px 12px;border:1px solid #FAC775;">
+      <svg width="22" height="22" viewBox="0 0 80 88"><path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#EF9F27"/><circle cx="33" cy="50" r="6" fill="white"/><circle cx="47" cy="50" r="6" fill="white"/><circle cx="33" cy="50" r="3" fill="#633806"/><circle cx="47" cy="50" r="3" fill="#633806"/><ellipse cx="40" cy="61" rx="4" ry="3" fill="white" opacity="0.9"/></svg>
+      <div style="flex:1;"><div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#633806;">Advertencia A · imagen borrosa</div><div style="font-size:9px;color:#854F0B;">OCR &lt; 75% · releer etiqueta</div></div>
+      <div style="background:#FAC775;color:#412402;border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;font-family:'Nunito',sans-serif;">FOTO</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;background:#FDF6E3;border-radius:10px;padding:8px 12px;border:1px solid #FAC775;">
+      <svg width="22" height="22" viewBox="0 0 80 88"><path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#EF9F27"/><path d="M28 43 Q33 41 37 43" fill="none" stroke="#633806" stroke-width="1.5" stroke-linecap="round"/><path d="M43 43 Q47 41 52 43" fill="none" stroke="#633806" stroke-width="1.5" stroke-linecap="round"/><circle cx="33" cy="50" r="6" fill="white"/><circle cx="47" cy="50" r="6" fill="white"/><circle cx="33" cy="51" r="3" fill="#633806"/><circle cx="47" cy="51" r="3" fill="#633806"/><path d="M35 61 Q40 60 45 61" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <div style="flex:1;"><div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#633806;">Advertencia B · zona faltante</div><div style="font-size:9px;color:#854F0B;">OCR 68% · ingredientes incompletos</div></div>
+      <div style="background:#FAC775;color:#412402;border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;font-family:'Nunito',sans-serif;">PARCIAL</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;background:#EAF7F2;border-radius:10px;padding:8px 12px;border:1px solid #9FE1CB;">
+      <svg width="22" height="22" viewBox="0 0 80 88"><path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#24C8A0"/><circle cx="33" cy="49" r="5" fill="white"/><circle cx="47" cy="49" r="5" fill="white"/><circle cx="34.5" cy="50" r="2.5" fill="#085041"/><circle cx="48.5" cy="50" r="2.5" fill="#085041"/><path d="M33 57 Q40 65 47 57" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <div style="flex:1;"><div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#085041;">Seguro</div><div style="font-size:9px;color:#0F6E56;">Sin alérgenos · OCR 100% confiable</div></div>
+      <div style="background:#9FE1CB;color:#04342C;border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;font-family:'Nunito',sans-serif;">OK</div>
+    </div>
+
+  </div>
+</div>
+
+</div>

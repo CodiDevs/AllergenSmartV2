@@ -1,0 +1,657 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
+  Platform,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import Svg, { Path, Circle, Rect, Ellipse } from 'react-native-svg';
+import { Colors } from '@/constants/Colors';
+import { FontFamily, FontSize } from '@/constants/Typography';
+import { useAppStore } from '@/store/appStore';
+import { AlergiMascot } from '@/components/ui/AlergiMascot';
+import { useAuthStore } from '@/stores/authStore';
+
+export default function HomeTab() {
+  const router = useRouter();
+  const { userName, allergens, history } = useAppStore();
+  const { user } = useAuthStore();
+
+  const displayName = user?.user_metadata?.full_name || userName;
+
+  // Get first letters of username
+  const initials = displayName
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  // Stats computed from store
+  const totalScans = history.length;
+  const activeAlerts = allergens.filter((a) => a.severity === 'HIGH').length;
+  const safeProductsCount = 31; // Mock count matching HTML
+  const preventedCount = 12; // Mock count matching HTML
+
+  // Recent history (take first 3)
+  const recentHistory = history.slice(0, 3);
+
+  // Allergen icons mapping
+  const getAllergenIcon = (id: string, color: string) => {
+    switch (id) {
+      case 'gluten':
+        return (
+          <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
+            <Path d="M12 3c-1.5 4-6 6-6 10a6 6 0 0012 0c0-4-4.5-6-6-10z" />
+          </Svg>
+        );
+      case 'lacteos':
+        return (
+          <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
+            <Ellipse cx={12} cy={12} rx={8} ry={5} />
+            <Path d="M12 7v10M7 9.5C9 11 15 11 17 9.5M7 14.5C9 13 15 13 17 14.5" />
+          </Svg>
+        );
+      case 'mani':
+        return (
+          <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
+            <Path d="M12 3c0 0-5 4-5 9a5 5 0 0010 0c0-5-5-9-5-9z" />
+            <Path d="M9 14c1-1.5 5-1.5 6 0" />
+          </Svg>
+        );
+      case 'huevo':
+        default:
+        return (
+          <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
+            <Circle cx={12} cy={12} r={7} />
+            <Path d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4" />
+          </Svg>
+        );
+    }
+  };
+
+  const getStatusStyle = (status: 'safe' | 'warning' | 'danger') => {
+    switch (status) {
+      case 'danger':
+        return {
+          dot: Colors.danger,
+          bg: Colors.dangerSurface,
+          border: Colors.dangerBorder,
+          text: Colors.dangerDark,
+          badgeText: 'PELIGRO',
+        };
+      case 'warning':
+        return {
+          dot: Colors.warning,
+          bg: Colors.warningSurface,
+          border: Colors.warningBorder,
+          text: Colors.warningDark,
+          badgeText: 'PRECAUCIÓN',
+        };
+      case 'safe':
+      default:
+        return {
+          dot: Colors.success,
+          bg: Colors.successSurface,
+          border: Colors.successBorder,
+          text: Colors.successDark,
+          badgeText: 'SEGURO',
+        };
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Top Header Statusbar Space Offset */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Top Navbar */}
+        <View style={styles.topnav}>
+          <View style={styles.topnavLeft}>
+            <Text style={styles.topnavGreeting}>Hola de nuevo,</Text>
+            <Text style={styles.topnavName}>{displayName}</Text>
+          </View>
+          <View style={styles.topnavRight}>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              activeOpacity={0.8}
+              accessibilityLabel="Notificaciones"
+            >
+              <Svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <Path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <Path d="M13.73 21a2 2 0 01-3.46 0" />
+              </Svg>
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              activeOpacity={0.8}
+              onPress={() => router.push('/(tabs)/profile')}
+            >
+              <Text style={styles.avatarText}>{initials}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Hero Card */}
+        <View style={styles.heroCard}>
+          {/* Background Mascot Silhouette */}
+          <View style={styles.heroCardBg}>
+            <Svg width="100" height="100" viewBox="0 0 80 88" opacity={0.08}>
+              <Path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#FFFFFF" />
+            </Svg>
+          </View>
+
+          <View style={styles.heroText}>
+            <Text style={styles.heroEyebrow}>SmartAllergen · listo para escanear</Text>
+            <Text style={styles.heroTitle}>¿Qué vas a{'\n'}comer hoy?</Text>
+            
+            <TouchableOpacity
+              style={styles.scanBtn}
+              activeOpacity={0.9}
+              onPress={() => router.push('/(tabs)/scanner')}
+            >
+              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2.2" strokeLinecap="round">
+                <Rect x="2" y="6" width="6" height="6" rx="1" />
+                <Rect x="16" y="6" width="6" height="6" rx="1" />
+                <Rect x="2" y="16" width="6" height="6" rx="1" />
+                <Path d="M16 16h2v2h2v2M20 16h2M16 20v2" />
+              </Svg>
+              <Text style={styles.scanBtnText}>Escanear etiqueta</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Mini Mascot */}
+          <View style={styles.mascotMiniWrapper}>
+            <Svg width="36" height="40" viewBox="0 0 80 88">
+              <Path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="white" opacity="0.9" />
+              <Circle cx="33" cy="50" r="5" fill={Colors.primary} />
+              <Circle cx="47" cy="50" r="5" fill={Colors.primary} />
+              <Circle cx="34.5" cy="51" r="2" fill="white" />
+              <Circle cx="48.5" cy="51" r="2" fill="white" />
+              <Path d="M34 57 Q40 63 46 57" fill="none" stroke={Colors.primary} strokeWidth={2} strokeLinecap="round" />
+            </Svg>
+          </View>
+        </View>
+
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Escaneos totales</Text>
+            <Text style={[styles.statNum, { color: Colors.primary }]}>{totalScans}</Text>
+            <View style={[styles.statSubContainer, { backgroundColor: '#EEF3FF' }]}>
+              <Text style={[styles.statSubText, { color: '#185FA5' }]}>este mes</Text>
+            </View>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Alertas activas</Text>
+            <Text style={[styles.statNum, { color: Colors.danger }]}>{activeAlerts}</Text>
+            <View style={[styles.statSubContainer, { backgroundColor: Colors.dangerSurface }]}>
+              <Text style={[styles.statSubText, { color: Colors.dangerDark }]}>alérgenos HIGH</Text>
+            </View>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Productos seguros</Text>
+            <Text style={[styles.statNum, { color: Colors.success }]}>{safeProductsCount}</Text>
+            <View style={[styles.statSubContainer, { backgroundColor: Colors.successSurface }]}>
+              <Text style={[styles.statSubText, { color: Colors.successDark }]}>guardados</Text>
+            </View>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Peligros evitados</Text>
+            <Text style={[styles.statNum, { color: Colors.warning }]}>{preventedCount}</Text>
+            <View style={[styles.statSubContainer, { backgroundColor: Colors.warningSurface }]}>
+              <Text style={[styles.statSubText, { color: Colors.warningDark }]}>esta semana</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Mis Alérgenos Section Header */}
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Mis alérgenos</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>
+            <Text style={styles.sectionLink}>Editar perfil</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Allergens Horizontal List */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.allergensScroll}
+        >
+          {allergens.map((allergen) => {
+            const isHigh = allergen.severity === 'HIGH';
+            const iconBg = isHigh ? Colors.dangerSurface : Colors.warningSurface;
+            const iconColor = isHigh ? Colors.danger : Colors.warning;
+            const sevBg = isHigh ? Colors.dangerBorder : Colors.warningBorder;
+            const sevColor = isHigh ? Colors.dangerBadgeText : Colors.warningBadgeText;
+
+            return (
+              <View key={allergen.id} style={styles.alChip}>
+                <View style={[styles.alChipIcon, { backgroundColor: iconBg }]}>
+                  {getAllergenIcon(allergen.id, iconColor)}
+                </View>
+                <Text style={styles.alChipName} numberOfLines={1}>
+                  {allergen.name}
+                </Text>
+                <View style={[styles.alChipSev, { backgroundColor: sevBg }]}>
+                  <Text style={[styles.alChipSevText, { color: sevColor }]}>
+                    {allergen.severity}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+
+          {/* Add Allergen Button */}
+          <TouchableOpacity
+            style={[styles.alChip, styles.alChipAdd]}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <View style={[styles.alChipIcon, { backgroundColor: '#F0F3FA' }]}>
+              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2.5" strokeLinecap="round">
+                <Path d="M12 5v14M5 12h14" />
+              </Svg>
+            </View>
+            <Text style={[styles.alChipName, { color: Colors.primary }]}>Añadir</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Recent History Section Header */}
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Historial reciente</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/history')}>
+            <Text style={styles.sectionLink}>Ver todo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* History List */}
+        <View style={styles.historyList}>
+          {recentHistory.map((item) => {
+            const stylesConfig = getStatusStyle(item.status);
+
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.histItem}
+                activeOpacity={0.9}
+                onPress={() => {
+                  useAppStore.getState().setActiveScan({
+                    name: item.name,
+                    brand: item.brand,
+                    status: item.status,
+                    confidence: item.confidence ?? 100,
+                    allergens: item.allergens,
+                    rawIngredients: item.rawIngredients,
+                    warningType: item.warningType,
+                  });
+                  if (item.status === 'warning') {
+                    router.push('/warning');
+                  } else {
+                    router.push('/result');
+                  }
+                }}
+              >
+                <View style={[styles.histDot, { backgroundColor: stylesConfig.dot }]} />
+                <View style={styles.histInfo}>
+                  <Text style={styles.histName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.histDetail} numberOfLines={1}>
+                    {item.detail}
+                  </Text>
+                </View>
+                <View style={[styles.histBadge, { backgroundColor: stylesConfig.bg }]}>
+                  <Text style={[styles.histBadgeText, { color: stylesConfig.text }]}>
+                    {stylesConfig.badgeText}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Tip of the day Card */}
+        <View style={styles.tipCard}>
+          <View style={styles.tipIcon}>
+            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#085041" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <Circle cx="12" cy="12" r="9" />
+              <Path d="M12 8v4l3 3" />
+            </Svg>
+          </View>
+          <View style={styles.tipTextContainer}>
+            <Text style={styles.tipLabel}>Consejo del día</Text>
+            <Text style={styles.tipDesc}>
+              Siempre escanea en espacios bien iluminados para obtener la mejor precisión OCR posible.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FAFBFF',
+  },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
+  },
+  topnav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: Platform.OS === 'android' ? 40 : 12,
+    paddingBottom: 10,
+  },
+  topnavLeft: {
+    flexDirection: 'column',
+  },
+  topnavGreeting: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: FontSize.md,
+    color: '#8896B0',
+  },
+  topnavName: {
+    fontFamily: FontFamily.nunitoBlack,
+    fontWeight: '900',
+    fontSize: 17,
+    color: '#1A2340',
+  },
+  topnavRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#EEF3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  notifDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#E24B4A',
+    borderWidth: 1.5,
+    borderColor: '#FAFBFF',
+  },
+  avatarContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#5A7BFA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontFamily: FontFamily.nunitoBlack,
+    fontWeight: '900',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  heroCard: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    backgroundColor: '#5A7BFA',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroCardBg: {
+    position: 'absolute',
+    right: -10,
+    bottom: -10,
+  },
+  heroText: {
+    flex: 1,
+    zIndex: 1,
+  },
+  heroEyebrow: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '500',
+    marginBottom: 3,
+  },
+  heroTitle: {
+    fontFamily: FontFamily.nunitoBlack,
+    fontWeight: '900',
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  scanBtn: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+  },
+  scanBtnText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontWeight: '800',
+    fontSize: 11,
+    color: '#5A7BFA',
+  },
+  mascotMiniWrapper: {
+    flexShrink: 0,
+    marginLeft: 8,
+    zIndex: 1,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    marginVertical: 10,
+  },
+  sectionTitle: {
+    fontFamily: FontFamily.nunitoExtraBold,
+    fontWeight: '800',
+    fontSize: 13,
+    color: '#1A2340',
+  },
+  sectionLink: {
+    fontFamily: FontFamily.nunitoBold,
+    fontWeight: '600',
+    fontSize: 11,
+    color: '#5A7BFA',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
+  statCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8ECF5',
+    borderRadius: 14,
+    padding: 12,
+    width: '48.5%', // responsive 2 columns
+  },
+  statLabel: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 10,
+    color: '#8896B0',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  statNum: {
+    fontFamily: FontFamily.nunitoBlack,
+    fontWeight: '900',
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  statSubContainer: {
+    borderRadius: 20,
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    alignSelf: 'flex-start',
+  },
+  statSubText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  allergensScroll: {
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingBottom: 4,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  alChip: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8ECF5',
+    borderRadius: 14,
+    padding: 10,
+    minWidth: 62,
+  },
+  alChipAdd: {
+    borderStyle: 'dashed',
+    borderColor: '#B0BAD0',
+  },
+  alChipIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alChipName: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#1A2340',
+  },
+  alChipSev: {
+    borderRadius: 20,
+    paddingVertical: 1,
+    paddingHorizontal: 5,
+  },
+  alChipSevText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 8,
+    fontWeight: '700',
+  },
+  historyList: {
+    paddingHorizontal: 16,
+    flexDirection: 'column',
+    gap: 7,
+    marginBottom: 4,
+  },
+  histItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8ECF5',
+    borderRadius: 14,
+    padding: 10,
+  },
+  histDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  histInfo: {
+    flex: 1,
+  },
+  histName: {
+    fontFamily: FontFamily.nunitoBold,
+    fontWeight: '800',
+    fontSize: 12,
+    color: '#1A2340',
+  },
+  histDetail: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 10,
+    color: '#8896B0',
+    marginTop: 1,
+  },
+  histBadge: {
+    borderRadius: 20,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  histBadgeText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  tipCard: {
+    marginHorizontal: 16,
+    marginVertical: 12,
+    backgroundColor: '#EAF7F2',
+    borderWidth: 1,
+    borderColor: '#9FE1CB',
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  tipIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#9FE1CB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipTextContainer: {
+    flex: 1,
+  },
+  tipLabel: {
+    fontFamily: FontFamily.nunitoBold,
+    fontWeight: '800',
+    fontSize: 11,
+    color: '#085041',
+    marginBottom: 2,
+  },
+  tipDesc: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 10,
+    color: '#0F6E56',
+    lineHeight: 14,
+  },
+});

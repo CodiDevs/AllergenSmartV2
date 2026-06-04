@@ -1,0 +1,328 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{font-family:'Inter',sans-serif;padding:16px 0 28px;background:transparent;}
+.section-label{font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#8896B0;text-transform:uppercase;letter-spacing:1.2px;text-align:center;margin-bottom:14px;}
+.phones-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:6px;}
+
+/* phone shell */
+.ph{width:190px;background:#FAFBFF;border-radius:30px;overflow:hidden;border:1.5px solid #E2E8F5;display:flex;flex-direction:column;}
+.ph.danger-ph{background:#FFFAFA;border-color:#F7C1C1;}
+.ph.warn-ph{background:#FFFDF5;border-color:#FAC775;}
+.ph.safe-ph{background:#F5FFFC;border-color:#9FE1CB;}
+.tbar{display:flex;justify-content:space-between;padding:9px 14px 3px;font-size:9px;color:#8896B0;font-family:'Inter',sans-serif;}
+
+/* nav bar top */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;}
+.nav-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#1A2340;}
+.nav-icon{width:28px;height:28px;border-radius:8px;background:#EEF3FF;display:flex;align-items:center;justify-content:center;}
+
+/* scanner screen */
+.cam-area{margin:8px 12px;border-radius:16px;overflow:hidden;background:#1A2340;height:130px;position:relative;display:flex;align-items:center;justify-content:center;}
+.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.scan-frame{width:120px;height:60px;border-radius:8px;position:relative;}
+.sf-tl,.sf-tr,.sf-bl,.sf-br{position:absolute;width:16px;height:16px;}
+.sf-tl{top:0;left:0;border-top:2.5px solid #24C8A0;border-left:2.5px solid #24C8A0;border-radius:4px 0 0 0;}
+.sf-tr{top:0;right:0;border-top:2.5px solid #24C8A0;border-right:2.5px solid #24C8A0;border-radius:0 4px 0 0;}
+.sf-bl{bottom:0;left:0;border-bottom:2.5px solid #24C8A0;border-left:2.5px solid #24C8A0;border-radius:0 0 0 4px;}
+.sf-br{bottom:0;right:0;border-bottom:2.5px solid #24C8A0;border-right:2.5px solid #24C8A0;border-radius:0 0 4px 0;}
+.scan-line{position:absolute;left:4px;right:4px;height:2px;background:#24C8A0;top:50%;opacity:0.8;}
+.cam-label-row{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;}
+.cam-pill{background:rgba(26,35,64,0.75);border-radius:20px;padding:3px 10px;font-size:9px;color:#fff;font-family:'Inter',sans-serif;}
+.cam-hint{text-align:center;font-size:10px;color:#6B7A99;margin:6px 12px 4px;line-height:1.4;}
+.ocr-strip{margin:0 12px 6px;background:#EEF3FF;border-radius:10px;padding:6px 10px;}
+.ocr-label{font-size:9px;color:#5A7BFA;font-weight:700;margin-bottom:3px;font-family:'Nunito',sans-serif;}
+.ocr-text{font-size:9px;color:#1A2340;line-height:1.5;font-family:'Inter',sans-serif;}
+.ocr-text span{background:#C7D8FF;border-radius:3px;padding:0 2px;}
+.scan-btn{margin:6px 12px 12px;background:#5A7BFA;border:none;border-radius:12px;padding:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;color:#fff;width:calc(100% - 24px);cursor:pointer;}
+
+/* processing screen */
+.proc-body{padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;}
+.proc-img{width:80px;height:52px;background:#E8ECF5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#8896B0;text-align:center;line-height:1.3;}
+.proc-steps{width:100%;display:flex;flex-direction:column;gap:5px;}
+.proc-step{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #E2E8F5;border-radius:10px;padding:7px 9px;}
+.proc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.proc-dot.done{background:#24C8A0;}
+.proc-dot.active{background:#5A7BFA;}
+.proc-dot.wait{background:#DDE3F0;}
+.proc-step-txt{font-size:10px;color:#1A2340;font-weight:500;}
+.proc-step-sub{font-size:9px;color:#8896B0;}
+.proc-bar-wrap{width:100%;background:#EEF3FF;border-radius:20px;height:5px;margin-top:2px;}
+.proc-bar-fill{height:5px;border-radius:20px;background:#5A7BFA;width:65%;}
+
+/* result screens common */
+.res-hero{padding:12px 12px 8px;display:flex;flex-direction:column;align-items:center;}
+.res-badge{border-radius:20px;padding:3px 12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:10px;margin-bottom:6px;}
+.res-product{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#1A2340;text-align:center;margin-bottom:1px;}
+.res-brand{font-size:9px;color:#8896B0;margin-bottom:8px;}
+.res-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:6px;}
+.allergen-row{display:flex;align-items:center;gap:7px;border-radius:10px;padding:7px 9px;}
+.al-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.al-name{font-size:11px;font-weight:700;font-family:'Nunito',sans-serif;}
+.al-sev{font-size:9px;margin-left:auto;font-weight:600;border-radius:20px;padding:2px 7px;}
+.al-desc{font-size:9px;color:#6B7A99;margin-top:1px;}
+.ocr-found{margin:0 12px 6px;background:#F7F9FF;border-radius:10px;padding:6px 9px;border:1px solid #E2E8F5;}
+.ocr-found-label{font-size:9px;color:#5A7BFA;font-weight:700;margin-bottom:2px;}
+.ocr-found-txt{font-size:9px;color:#3A3A50;line-height:1.5;}
+.ocr-found-txt b{border-radius:3px;padding:0 2px;}
+.action-btn{margin:4px 12px 0;border:none;border-radius:12px;padding:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;cursor:pointer;width:calc(100% - 24px);}
+.sec-btn{margin:4px 12px 10px;border-radius:12px;padding:8px;font-family:'Nunito',sans-serif;font-weight:700;font-size:10px;cursor:pointer;width:calc(100% - 24px);background:#F7F9FF;border:1px solid #DDE3F0;color:#5A7BFA;}
+</style>
+
+<div class="wrap">
+<h2 class="sr-only">SmartAllergen — flujo completo de escaneo OCR y resultados del semáforo de alérgenos</h2>
+
+<div class="section-label">Flujo de escaneo · SmartAllergen</div>
+
+<div class="phones-row">
+
+  <!-- ═══ PANTALLA 1: ESCÁNER OCR ═══ -->
+  <div class="ph">
+    <div class="tbar"><span>9:41</span><span>87%</span></div>
+    <div class="nav">
+      <div class="nav-icon">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#5A7BFA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="nav-title">Escanear etiqueta</span>
+      <div class="nav-icon">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#5A7BFA" stroke-width="1.4"/><path d="M8 7v5" stroke="#5A7BFA" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5" r="0.8" fill="#5A7BFA"/></svg>
+      </div>
+    </div>
+
+    <div class="cam-area">
+      <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;opacity:0.08;">
+        <div style="border-right:1px solid white;border-bottom:1px solid white;"></div><div style="border-right:1px solid white;border-bottom:1px solid white;"></div><div style="border-bottom:1px solid white;"></div>
+        <div style="border-right:1px solid white;border-bottom:1px solid white;"></div><div style="border-right:1px solid white;border-bottom:1px solid white;"></div><div style="border-bottom:1px solid white;"></div>
+        <div style="border-right:1px solid white;"></div><div style="border-right:1px solid white;"></div><div></div>
+      </div>
+      <div class="cam-overlay">
+        <div class="scan-frame">
+          <div class="sf-tl"></div><div class="sf-tr"></div><div class="sf-bl"></div><div class="sf-br"></div>
+          <div class="scan-line"></div>
+          <div style="position:absolute;inset:8px;display:flex;flex-direction:column;gap:3px;opacity:0.35;">
+            <div style="height:5px;background:#fff;border-radius:2px;width:90%;"></div>
+            <div style="height:5px;background:#fff;border-radius:2px;width:75%;"></div>
+            <div style="height:5px;background:#fff;border-radius:2px;width:85%;"></div>
+            <div style="height:5px;background:#fff;border-radius:2px;width:60%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="cam-label-row">
+        <div class="cam-pill">
+          <svg width="8" height="8" viewBox="0 0 10 10" style="display:inline;vertical-align:-1px;margin-right:3px;"><circle cx="5" cy="5" r="4" fill="#24C8A0"/></svg>
+          OCR activo
+        </div>
+      </div>
+    </div>
+
+    <div class="cam-hint">Apunta la cámara a la lista de ingredientes</div>
+
+    <div class="ocr-strip">
+      <div class="ocr-label">Texto detectado en tiempo real</div>
+      <div class="ocr-text">...aceite de girasol, <span>gluten</span>, sal, <span>leche</span> descremada, azúcar, emulsionante...</div>
+    </div>
+
+    <button class="scan-btn">Analizar ingredientes</button>
+  </div>
+
+  <!-- ═══ PANTALLA 2: PROCESANDO OCR ═══ -->
+  <div class="ph">
+    <div class="tbar"><span>9:41</span><span>87%</span></div>
+    <div class="nav">
+      <div class="nav-icon" style="background:#F0FBF7;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#24C8A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="nav-title">Analizando...</span>
+      <div style="width:28px;"></div>
+    </div>
+
+    <div class="proc-body">
+      <div class="proc-img">
+        <svg width="36" height="36" viewBox="0 0 80 88">
+          <path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#5A7BFA"/>
+          <ellipse cx="30" cy="34" rx="4" ry="7" fill="#8FABFF" opacity="0.45" transform="rotate(-20 30 34)"/>
+          <circle cx="33" cy="50" r="5" fill="white"/><circle cx="47" cy="50" r="5" fill="white"/>
+          <circle cx="34.5" cy="51" r="2.5" fill="#1A2D8C"/><circle cx="48.5" cy="51" r="2.5" fill="#1A2D8C"/>
+          <path d="M34 57 Q40 63 46 57" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div style="text-align:center;margin-bottom:4px;">
+        <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#1A2340;">Alergi está trabajando</div>
+        <div style="font-size:10px;color:#6B7A99;">Procesando 312 caracteres detectados</div>
+      </div>
+
+      <div class="proc-steps">
+        <div class="proc-step">
+          <div class="proc-dot done"></div>
+          <div><div class="proc-step-txt">Captura de imagen</div><div class="proc-step-sub">1 foto · 2.1 MP</div></div>
+          <svg style="margin-left:auto;" width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="#9FE1CB"/><path d="M4 7l2 2 4-4" stroke="#085041" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="proc-step" style="border-color:#B5D4F4;background:#F0F6FF;">
+          <div class="proc-dot active"></div>
+          <div><div class="proc-step-txt" style="color:#185FA5;">Extracción OCR</div><div class="proc-step-sub" style="color:#5A7BFA;">Identificando ingredientes...</div></div>
+        </div>
+        <div class="proc-step" style="opacity:0.5;">
+          <div class="proc-dot wait"></div>
+          <div><div class="proc-step-txt">Análisis de alérgenos</div><div class="proc-step-sub">Base de datos CodiDevs</div></div>
+        </div>
+        <div class="proc-step" style="opacity:0.5;">
+          <div class="proc-dot wait"></div>
+          <div><div class="proc-step-txt">Cruce con tu perfil</div><div class="proc-step-sub">Severidad personalizada</div></div>
+        </div>
+      </div>
+
+      <div class="proc-bar-wrap"><div class="proc-bar-fill"></div></div>
+      <div style="font-size:9px;color:#8896B0;">65% completado</div>
+    </div>
+  </div>
+
+  <!-- ═══ PANTALLA 3: RESULTADO PELIGRO ═══ -->
+  <div class="ph danger-ph">
+    <div class="tbar"><span>9:41</span><span>87%</span></div>
+    <div class="nav">
+      <div class="nav-icon" style="background:#FEECEC;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#E24B4A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="nav-title" style="color:#791F1F;">Resultado</span>
+      <div class="nav-icon" style="background:#FEECEC;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 3L3 13M3 3l10 10" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <div class="res-hero" style="background:#FEECEC;">
+      <svg width="52" height="52" viewBox="0 0 80 88" style="margin-bottom:6px;">
+        <path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#E24B4A"/>
+        <ellipse cx="30" cy="34" rx="4" ry="7" fill="#FF9090" opacity="0.4" transform="rotate(-20 30 34)"/>
+        <line x1="29" y1="44" x2="37" y2="46" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="43" y1="46" x2="51" y2="44" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="33" cy="50" r="5" fill="white"/><circle cx="47" cy="50" r="5" fill="white"/>
+        <circle cx="33" cy="51" r="2.5" fill="#791F1F"/><circle cx="47" cy="51" r="2.5" fill="#791F1F"/>
+        <path d="M34 60 Q40 55 46 60" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M58 28 C58 28 56 32 59 34 C62 32 60 28 58 28Z" fill="#FF9090" opacity="0.7"/>
+      </svg>
+      <div class="res-badge" style="background:#F7C1C1;color:#501313;">PELIGRO · NO CONSUMIR</div>
+      <div class="res-product">Galletas Integrales 200g</div>
+      <div class="res-brand">Marca: NutriSnack · 2 alérgenos HIGH</div>
+    </div>
+
+    <div class="ocr-found">
+      <div class="ocr-found-label">Detectado por OCR en ingredientes</div>
+      <div class="ocr-found-txt">aceite de girasol, sal, azúcar, <b style="background:#FFBCBC;color:#791F1F;">gluten de trigo</b>, emulsionante E471, <b style="background:#FFBCBC;color:#791F1F;">leche entera</b>, extracto de vainilla</div>
+    </div>
+
+    <div class="res-body">
+      <div class="allergen-row" style="background:#FEECEC;border:1px solid #F7C1C1;">
+        <div class="al-dot" style="background:#E24B4A;"></div>
+        <div>
+          <div class="al-name" style="color:#791F1F;">Gluten (trigo)</div>
+          <div class="al-desc">Celiaquía confirmada en tu perfil</div>
+        </div>
+        <div class="al-sev" style="background:#F7C1C1;color:#501313;">HIGH</div>
+      </div>
+      <div class="allergen-row" style="background:#FEECEC;border:1px solid #F7C1C1;">
+        <div class="al-dot" style="background:#E24B4A;"></div>
+        <div>
+          <div class="al-name" style="color:#791F1F;">Lácteos (leche)</div>
+          <div class="al-desc">Intolerancia severa en tu perfil</div>
+        </div>
+        <div class="al-sev" style="background:#F7C1C1;color:#501313;">HIGH</div>
+      </div>
+    </div>
+
+    <button class="action-btn" style="background:#E24B4A;color:#fff;">Ver alternativas seguras</button>
+    <button class="sec-btn" style="border-color:#F7C1C1;color:#A32D2D;">Guardar en historial</button>
+  </div>
+
+  <!-- ═══ PANTALLA 4: RESULTADO SEGURO ═══ -->
+  <div class="ph safe-ph">
+    <div class="tbar"><span>9:41</span><span>87%</span></div>
+    <div class="nav">
+      <div class="nav-icon" style="background:#EAF7F2;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#24C8A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="nav-title" style="color:#085041;">Resultado</span>
+      <div class="nav-icon" style="background:#EAF7F2;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="#24C8A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+
+    <div class="res-hero" style="background:#EAF7F2;">
+      <svg width="52" height="52" viewBox="0 0 80 88" style="margin-bottom:6px;">
+        <path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#24C8A0"/>
+        <ellipse cx="30" cy="34" rx="4" ry="7" fill="#6FE2C8" opacity="0.45" transform="rotate(-20 30 34)"/>
+        <circle cx="33" cy="49" r="5" fill="white"/><circle cx="47" cy="49" r="5" fill="white"/>
+        <circle cx="34.5" cy="50" r="2.5" fill="#085041"/><circle cx="48.5" cy="50" r="2.5" fill="#085041"/>
+        <circle cx="35.5" cy="49" r="1" fill="white"/><circle cx="49.5" cy="49" r="1" fill="white"/>
+        <path d="M33 57 Q40 65 47 57" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+        <ellipse cx="28" cy="57" rx="3.5" ry="2.2" fill="#3DCFB0" opacity="0.55"/>
+        <ellipse cx="52" cy="57" rx="3.5" ry="2.2" fill="#3DCFB0" opacity="0.55"/>
+      </svg>
+      <div class="res-badge" style="background:#9FE1CB;color:#04342C;">SEGURO · PUEDES COMERLO</div>
+      <div class="res-product">Avena Natural Sin Gluten</div>
+      <div class="res-brand">Marca: OatLife · 0 alérgenos detectados</div>
+    </div>
+
+    <div class="ocr-found">
+      <div class="ocr-found-label">Detectado por OCR en ingredientes</div>
+      <div class="ocr-found-txt" style="color:#3A3A50;">copos de avena certificada, agua, sal marina, sin conservantes, sin gluten, sin lácteos, trazas: ninguna</div>
+    </div>
+
+    <div class="res-body">
+      <div class="allergen-row" style="background:#EAF7F2;border:1px solid #9FE1CB;">
+        <div class="al-dot" style="background:#24C8A0;"></div>
+        <div>
+          <div class="al-name" style="color:#085041;">Sin gluten</div>
+          <div class="al-desc">Certificado libre de gluten</div>
+        </div>
+        <div class="al-sev" style="background:#9FE1CB;color:#04342C;">OK</div>
+      </div>
+      <div class="allergen-row" style="background:#EAF7F2;border:1px solid #9FE1CB;">
+        <div class="al-dot" style="background:#24C8A0;"></div>
+        <div>
+          <div class="al-name" style="color:#085041;">Sin lácteos</div>
+          <div class="al-desc">No contiene derivados de leche</div>
+        </div>
+        <div class="al-sev" style="background:#9FE1CB;color:#04342C;">OK</div>
+      </div>
+      <div class="allergen-row" style="background:#EAF7F2;border:1px solid #9FE1CB;">
+        <div class="al-dot" style="background:#24C8A0;"></div>
+        <div>
+          <div class="al-name" style="color:#085041;">Sin trazas</div>
+          <div class="al-desc">Apto para alta sensibilidad</div>
+        </div>
+        <div class="al-sev" style="background:#9FE1CB;color:#04342C;">OK</div>
+      </div>
+    </div>
+
+    <button class="action-btn" style="background:#24C8A0;color:#fff;">Agregar a mis favoritos</button>
+    <button class="sec-btn" style="border-color:#9FE1CB;color:#0F6E56;">Compartir con familia</button>
+  </div>
+
+</div>
+
+<!-- etiqueta de flujo -->
+<div style="display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+  <div style="display:flex;align-items:center;gap:4px;">
+    <div style="width:8px;height:8px;border-radius:50%;background:#5A7BFA;"></div>
+    <span style="font-size:10px;color:#6B7A99;font-family:'Nunito',sans-serif;font-weight:700;">1 · Escanear</span>
+  </div>
+  <div style="color:#DDE3F0;font-size:12px;">→</div>
+  <div style="display:flex;align-items:center;gap:4px;">
+    <div style="width:8px;height:8px;border-radius:50%;background:#5A7BFA;"></div>
+    <span style="font-size:10px;color:#6B7A99;font-family:'Nunito',sans-serif;font-weight:700;">2 · OCR + análisis</span>
+  </div>
+  <div style="color:#DDE3F0;font-size:12px;">→</div>
+  <div style="display:flex;align-items:center;gap:4px;">
+    <div style="width:8px;height:8px;border-radius:50%;background:#E24B4A;"></div>
+    <span style="font-size:10px;color:#6B7A99;font-family:'Nunito',sans-serif;font-weight:700;">3a · Peligro (high)</span>
+  </div>
+  <div style="color:#DDE3F0;font-size:12px;">/</div>
+  <div style="display:flex;align-items:center;gap:4px;">
+    <div style="width:8px;height:8px;border-radius:50%;background:#24C8A0;"></div>
+    <span style="font-size:10px;color:#6B7A99;font-family:'Nunito',sans-serif;font-weight:700;">3b · Seguro</span>
+  </div>
+</div>
+
+</div>
