@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -11,6 +10,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { router } from 'expo-router';
 import Svg, { Path, Rect, Circle, Line, RadialGradient, Defs, Stop } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
@@ -22,12 +22,12 @@ const { width } = Dimensions.get('window');
 type ScanSubState = 'idle' | 'active_ocr' | 'flashlight' | 'gallery' | 'manual';
 
 export default function ScanScreen() {
-  const { setActiveScan } = useAppStore();
+  const { allergens, setActiveScan, addHistoryItem } = useAppStore();
   const [subState, setSubState] = useState<ScanSubState>('idle');
-  const [selectedPhoto, setSelectedPhoto] = useState<number | null>(2); // Default to 3rd photo (index 2) as in HTML
-  const [productName, setProductName] = useState('Galletas NutriSnack...');
-  const [ingredientsText, setIngredientsText] = useState('Harina de trigo, azúcar, aceite de girasol, leche descremada, gluten de trigo, sal, lecitina de soya...');
-  const [barcodeText, setBarcodeText] = useState('7622210100283');
+  const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
+  const [productName, setProductName] = useState('');
+  const [ingredientsText, setIngredientsText] = useState('');
+  const [barcodeText, setBarcodeText] = useState('');
 
   // Animation for the scanning line in Active OCR
   const scanLineAnim = React.useRef(new Animated.Value(0)).current;
@@ -58,50 +58,91 @@ export default function ScanScreen() {
     outputRange: [0, 100], // Matches the height of the frame
   });
 
+  /**
+   * Cruza el texto de ingredientes con el perfil de alérgenos del usuario.
+   * Devuelve los nombres de alérgenos detectados.
+   */
+  const detectAllergensFromText = (text: string): string[] => {
+    const lowerText = text.toLowerCase();
+    const detected: string[] = [];
+
+    for (const allergen of allergens) {
+      const allergenName = allergen.name.toLowerCase();
+      // Busca el nombre del alérgeno directamente en el texto
+      if (lowerText.includes(allergenName)) {
+        detected.push(allergen.name);
+      }
+    }
+
+    return detected;
+  };
+
   const handleAnalyze = () => {
-    let mockScan: any = null;
+    let scan: any = null;
 
     if (subState === 'gallery') {
-      mockScan = {
-        name: 'Galletas de Avena 150g',
-        brand: 'OatLife',
-        status: 'warning',
-        warningType: 'partial',
-        confidence: 68,
-        allergens: ['Lácteos', 'Frutos secos'],
-        rawIngredients: 'avena, aceite de coco, miel, azúcar morena, sal — [zona cortada: ~3 líneas]'
+      // Galería: el backend hará OCR de la imagen seleccionada.
+      // Por ahora generamos un resultado vacío listo para que el backend lo llene.
+      const rawText = productName.trim() || '';
+      const detectedAllergens = detectAllergensFromText(rawText);
+
+      scan = {
+        name: productName.trim() || 'Producto (galería)',
+        brand: '',
+        status: detectedAllergens.length > 0 ? 'danger' : 'safe',
+        confidence: 90,
+        allergens: detectedAllergens,
+        rawIngredients: rawText || 'Pendiente de OCR',
+        warningType: undefined,
       };
     } else if (subState === 'manual') {
-      const text = (ingredientsText.toLowerCase() + productName.toLowerCase());
-      const hasGluten = text.includes('gluten') || text.includes('trigo') || text.includes('avena');
-      const hasLact = text.includes('leche') || text.includes('lactosa') || text.includes('queso') || text.includes('yogur');
-      const hasMani = text.includes('mani') || text.includes('cacahuate') || text.includes('nuez');
+      // Entrada manual: detectamos alérgenos cruzando con el perfil del usuario
+      const combinedText = ingredientsText + ' ' + productName;
+      const detectedAllergens = detectAllergensFromText(combinedText);
 
-      const detected = [];
-      if (hasGluten) detected.push('Gluten');
-      if (hasLact) detected.push('Lácteos');
-      if (hasMani) detected.push('Maní');
-
-      mockScan = {
+      scan = {
         name: productName.trim() || 'Producto Manual',
-        brand: 'Manual Entry',
-        status: detected.length > 0 ? 'danger' : 'safe',
+        brand: 'Entrada manual',
+        status: detectedAllergens.length > 0 ? 'danger' : 'safe',
         confidence: 100,
-        allergens: detected,
+        allergens: detectedAllergens,
         rawIngredients: ingredientsText.trim() || 'Ingredientes ingresados manualmente',
+        warningType: undefined,
       };
     } else {
-      mockScan = {
-        name: 'Galletas Integrales NutriSnack',
-        brand: 'NutriSnack',
-        status: 'danger',
-        confidence: 87,
-        allergens: ['Gluten', 'Lácteos'],
-        rawIngredients: 'aceite de girasol, sal, azúcar, gluten de trigo, emulsionante E471, leche entera, extracto de vainilla'
+      // Modo cámara (idle / active_ocr / flashlight)
+      // El backend procesará la imagen cuando esté implementado.
+      // Por ahora avanzamos a processing con un resultado vacío.
+      scan = {
+        name: 'Producto escaneado',
+        brand: '',
+        status: 'safe',
+        confidence: 0,
+        allergens: [],
+        rawIngredients: 'Pendiente de análisis OCR',
+        warningType: undefined,
       };
     }
 
-    setActiveScan(mockScan);
+    // Guardar en historial local
+    const now = new Date();
+    const isToday = true; // siempre es hoy cuando se escanea
+    addHistoryItem({
+      name: scan.name,
+      brand: scan.brand || '',
+      detail: scan.allergens.length > 0
+        ? `${scan.allergens.length} alérgeno${scan.allergens.length > 1 ? 's' : ''} detectado${scan.allergens.length > 1 ? 's' : ''}`
+        : 'Sin alérgenos detectados',
+      time: now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      date: 'Hoy',
+      status: scan.status,
+      confidence: scan.confidence,
+      allergens: scan.allergens,
+      rawIngredients: scan.rawIngredients,
+      warningType: scan.warningType,
+    });
+
+    setActiveScan(scan);
     router.push('/processing');
   };
 
@@ -164,33 +205,6 @@ export default function ScanScreen() {
           )}
 
           {subState !== 'active_ocr' && subState !== 'flashlight' && <View style={{ width: 34 }} />}
-        </View>
-
-        {/* ─── State Selector Helper (Useful for Testing) ─── */}
-        <View style={styles.stateSelector}>
-          <Text style={[styles.selectorLabel, isDarkMode && { color: '#64748B' }]}>Simular estado:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
-            {(['idle', 'active_ocr', 'flashlight', 'gallery', 'manual'] as const).map((s) => (
-              <TouchableOpacity
-                key={s}
-                style={[
-                  styles.selectorBtn,
-                  subState === s && styles.selectorBtnActive,
-                  isDarkMode && styles.selectorBtnDark,
-                ]}
-                onPress={() => setSubState(s)}
-              >
-                <Text
-                  style={[
-                    styles.selectorBtnText,
-                    subState === s && styles.selectorBtnTextActive,
-                  ]}
-                >
-                  {s.replace('_', ' ').toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
         </View>
 
         {/* ─── CAMERA / PREVIEW SECTION (Dark states) ─── */}

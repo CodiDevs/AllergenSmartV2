@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   SafeAreaView,
   Platform,
   TouchableOpacity,
 } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';

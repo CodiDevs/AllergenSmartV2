@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -10,37 +9,47 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
 import { FontFamily, FontSize } from '@/constants/Typography';
-import { useAppStore, Allergen } from '@/store/appStore';
+import {
+  useAppStore,
+  Allergen,
+  selectSafeCount,
+  selectDangerCount,
+} from '@/store/appStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiScale } from '@/hooks/useUiScale';
 
 export default function ProfileTab() {
   const router = useRouter();
-  const { isPremium, allergens, addAllergen, removeAllergen, history } = useAppStore();
+  const scale = useUiScale();
+  const { allergens, addAllergen, removeAllergen, history, uiScale, setUiScale } = useAppStore();
   const { user, signOut } = useAuthStore();
 
+  // Nombre y email reales desde Supabase Auth
   const userName = user?.user_metadata?.full_name || 'Usuario';
-  const userEmail = user?.email || 'usuario@correo.com';
+  const userEmail = user?.email || '';
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newAllergenName, setNewAllergenName] = useState('');
   const [newAllergenSeverity, setNewAllergenSeverity] = useState<'HIGH' | 'MED' | 'LOW'>('HIGH');
   const [newAllergenNote, setNewAllergenNote] = useState('');
 
-  // Statistics
+  // Estadísticas calculadas desde historial real
   const totalScans = history.length;
-  const safeCount = 31;
-  const avoidedCount = 12;
+  const safeCount = useAppStore(selectSafeCount);
+  const avoidedCount = useAppStore(selectDangerCount);
 
   const initials = userName
     .split(' ')
     .map((n: string) => n[0])
+    .filter(Boolean)
     .join('')
     .substring(0, 2)
-    .toUpperCase();
+    .toUpperCase() || '?';
 
   const handleAddAllergen = () => {
     if (!newAllergenName.trim()) {
@@ -109,21 +118,12 @@ export default function ProfileTab() {
 
           {/* User Info Row */}
           <View style={styles.profileRow}>
-            <View style={styles.avatar}>
+            <View style={[styles.avatar, { width: 65 * scale, height: 65 * scale, borderRadius: (65 * scale) / 2 }]}>
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.profileDetails}>
               <Text style={styles.profileName}>{userName}</Text>
               <Text style={styles.profileEmail}>{userEmail}</Text>
-              
-              {isPremium && (
-                <View style={styles.premiumBadge}>
-                  <Svg width="9" height="9" viewBox="0 0 14 14" fill="none">
-                    <Path d="M7 1L1.5 3.5v4C1.5 11 4 13.5 7 14c3-0.5 5.5-3 5.5-6.5v-4L7 1z" fill="white" />
-                  </Svg>
-                  <Text style={styles.premiumText}>CodiDevs · Premium</Text>
-                </View>
-              )}
             </View>
           </View>
 
@@ -251,6 +251,46 @@ export default function ProfileTab() {
 
           {/* Settings Options Box */}
           <View style={styles.settingsBox}>
+            {/* UI Scale Setting */}
+            <View style={styles.scaleSettingContainer}>
+              <View style={styles.scaleHeader}>
+                <View style={[styles.settingIcon, { backgroundColor: '#EEF3FF', width: 30 * scale, height: 30 * scale }]}>
+                  <Svg width={15 * scale} height={15 * scale} viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round">
+                    <Path d="M4 7V4h16v3M9 20h6M12 4v16" />
+                  </Svg>
+                </View>
+                <Text style={styles.settingText}>Tamaño de texto</Text>
+              </View>
+              <View style={styles.scaleOptionsRow}>
+                {(['small', 'medium', 'large'] as const).map((scale) => {
+                  const isActive = uiScale === scale;
+                  const label = scale === 'small' ? 'A-' : scale === 'medium' ? 'A' : 'A+';
+                  return (
+                    <TouchableOpacity
+                      key={scale}
+                      style={[
+                        styles.scaleBtn,
+                        isActive && styles.scaleBtnActive
+                      ]}
+                      onPress={() => setUiScale(scale)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[
+                        styles.scaleBtnText,
+                        isActive && styles.scaleBtnTextActive,
+                        scale === 'small' && { fontSize: 13 },
+                        scale === 'medium' && { fontSize: 15 },
+                        scale === 'large' && { fontSize: 17 },
+                      ]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+            <View style={styles.divider} />
+
             {/* Notification */}
             <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
               <View style={[styles.settingIcon, { backgroundColor: '#EEF3FF' }]}>
@@ -501,12 +541,54 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   settingItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F3FA',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F3FA',
+    marginHorizontal: 16,
+  },
+  scaleSettingContainer: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  scaleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  scaleOptionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 4,
+  },
+  scaleBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  scaleBtnActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  scaleBtnText: {
+    fontFamily: FontFamily.nunitoBold,
+    color: Colors.textSecondary,
+  },
+  scaleBtnTextActive: {
+    color: Colors.primary,
   },
   settingIcon: {
     width: 30,

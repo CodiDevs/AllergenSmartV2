@@ -1,43 +1,52 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
   Platform,
 } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle, Rect, Ellipse } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
 import { FontFamily, FontSize } from '@/constants/Typography';
-import { useAppStore } from '@/store/appStore';
+import {
+  useAppStore,
+  selectSafeCount,
+  selectDangerCount,
+  selectActiveHighAlerts,
+} from '@/store/appStore';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiScale } from '@/hooks/useUiScale';
 
 export default function HomeTab() {
   const router = useRouter();
-  const { userName, allergens, history } = useAppStore();
+  const scale = useUiScale();
+  const { allergens, history } = useAppStore();
   const { user } = useAuthStore();
 
-  const displayName = user?.user_metadata?.full_name || userName;
+  // Nombre real desde Supabase Auth
+  const displayName = user?.user_metadata?.full_name || 'Bienvenido';
 
-  // Get first letters of username
+  // Iniciales para el avatar
   const initials = displayName
     .split(' ')
     .map((n: string) => n[0])
+    .filter(Boolean)
     .join('')
     .substring(0, 2)
-    .toUpperCase();
+    .toUpperCase() || '?';
 
-  // Stats computed from store
+  // Estadísticas calculadas desde el historial real
   const totalScans = history.length;
-  const activeAlerts = allergens.filter((a) => a.severity === 'HIGH').length;
-  const safeProductsCount = 31; // Mock count matching HTML
-  const preventedCount = 12; // Mock count matching HTML
+  const activeAlerts = useAppStore(selectActiveHighAlerts);
+  const safeProductsCount = useAppStore(selectSafeCount);
+  const preventedCount = useAppStore(selectDangerCount);
 
-  // Recent history (take first 3)
+  // Historial reciente (primeros 3 items)
   const recentHistory = history.slice(0, 3);
 
   // Allergen icons mapping
@@ -131,7 +140,7 @@ export default function HomeTab() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.avatarContainer}
+              style={[styles.avatarContainer, { width: 36 * scale, height: 36 * scale, borderRadius: (36 * scale) / 2 }]}
               activeOpacity={0.8}
               onPress={() => router.push('/(tabs)/profile')}
             >
@@ -156,7 +165,7 @@ export default function HomeTab() {
             <TouchableOpacity
               style={styles.scanBtn}
               activeOpacity={0.9}
-              onPress={() => router.push('/(tabs)/scanner')}
+              onPress={() => router.push('/(tabs)/scan')}
             >
               <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2.2" strokeLinecap="round">
                 <Rect x="2" y="6" width="6" height="6" rx="1" />

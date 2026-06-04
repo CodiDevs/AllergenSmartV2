@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
   Platform,
 } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
@@ -16,6 +16,13 @@ import { useAppStore, HistoryItem } from '@/store/appStore';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 
 type FilterType = 'Todo' | 'Peligros' | 'Precaución' | 'Seguros';
+
+// Formatea el mes y año actual en español
+const getCurrentMonthYear = (): string => {
+  const now = new Date();
+  return now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+};
+
 
 export default function HistoryTab() {
   const router = useRouter();
@@ -102,7 +109,7 @@ export default function HistoryTab() {
         <View style={styles.topnav}>
           <View>
             <Text style={styles.topnavTitle}>Historial</Text>
-            <Text style={styles.topnavSub}>{history.length} escaneos · junio 2026</Text>
+            <Text style={styles.topnavSub}>{history.length} escaneos · {getCurrentMonthYear()}</Text>
           </View>
           <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8} accessibilityLabel="Filtrar historial">
             <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2" strokeLinecap="round">
