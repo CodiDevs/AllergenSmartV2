@@ -20,16 +20,19 @@ import { FontFamily, FontSize } from '@/constants/Typography';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { AppButton } from '@/components/ui/AppButton';
 import { supabase } from '@/services/supabase';
+import { AppText } from '@/components/ui/AppText';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [registered, setRegistered] = useState(false);
 
   const hasError = error.length > 0;
 
@@ -60,9 +63,7 @@ export default function RegisterScreen() {
       if (signUpError) {
         setError(signUpError.message);
       } else if (data.user) {
-        // Sign up success
-        // If email confirmation is required, Supabase will register user but they might need to verify email.
-        // Usually anonymous key registers successfully.
+        setRegistered(true);
       }
     } catch (err: any) {
       setError(err?.message || 'Error al registrar usuario');
@@ -70,6 +71,43 @@ export default function RegisterScreen() {
       setLoading(false);
     }
   };
+
+  if (registered) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.hero, { flex: 1, justifyContent: 'center', paddingBottom: 60 }]}>
+          <View style={styles.mascotContainer}>
+            <AlergiMascot state="green" size={120} />
+          </View>
+          <AppText style={styles.brandName}>SmartAllergen</AppText>
+          <AppText style={styles.brandTag}>¡Cuenta creada con éxito!</AppText>
+
+          <View style={styles.successCard}>
+            <Svg width={48} height={48} viewBox="0 0 24 24" fill="none" style={{ marginBottom: 16 }}>
+              <Circle cx="12" cy="12" r="10" fill={Colors.successSurface} stroke={Colors.success} strokeWidth="1.5" />
+              <Path d="M9 12l2 2 4-4" stroke={Colors.success} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+            <AppText style={styles.successTitle}>¡Casi listo!</AppText>
+            <AppText style={styles.successMessage}>
+              Te hemos enviado un enlace de confirmación a:
+            </AppText>
+            <AppText style={styles.successEmail}>{email}</AppText>
+            <AppText style={styles.successSubmessage}>
+              Por favor, revisa tu bandeja de entrada (y la carpeta de spam o correo no deseado si es necesario) para activar tu cuenta antes de iniciar sesión.
+            </AppText>
+          </View>
+
+          <View style={{ width: '100%', paddingHorizontal: 24, marginTop: 40 }}>
+            <AppButton
+              title="Ir al inicio de sesión"
+              variant="green"
+              onPress={() => router.replace('/(auth)/login')}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -210,8 +248,25 @@ export default function RegisterScreen() {
               onChangeText={(t) => { setPassword(t); setError(''); }}
               onFocus={() => setPasswordFocused(true)}
               onBlur={() => setPasswordFocused(false)}
-              secureTextEntry
+              secureTextEntry={!showPassword}
             />
+            <TouchableOpacity 
+              onPress={() => setShowPassword(!showPassword)} 
+              style={{ padding: 4 }}
+              activeOpacity={0.7}
+            >
+              {showPassword ? (
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <Circle cx="12" cy="12" r="3" />
+                </Svg>
+              ) : (
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={Colors.textQuaternary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+                  <Path d="M1 1l22 22" />
+                </Svg>
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Continue Button */}
@@ -401,5 +456,49 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.successMid,
     fontWeight: '500',
+  },
+  successCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    marginHorizontal: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    marginTop: 20,
+  },
+  successTitle: {
+    fontFamily: FontFamily.nunitoExtraBold,
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    marginBottom: 8,
+  },
+  successMessage: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  successEmail: {
+    fontFamily: FontFamily.interSemiBold,
+    fontSize: 14,
+    color: Colors.successDark,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  successSubmessage: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 12,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
