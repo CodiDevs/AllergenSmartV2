@@ -1,136 +1,96 @@
 # 📊 BACKEND_PROGRESS — AllergenSmart V2
 
-> **Documento vivo.** Se actualiza al cerrar cada slice. Última actualización: 2026-06-09.
-> Rama: `V1-backend`.
+> **Documento vivo** — se actualiza al cerrar cada cosa completa.
+> Última actualización: **2026-06-09** · Rama: `V1-backend`.
 
 ---
 
-## 🎯 Objetivo del sprint
+## 🎯 Objetivo
 
-Dejar **todo el backend funcional y conectable** para que el equipo de Frontend (React Native / Expo)
-lo enchufe sin tocar lógica de negocio. Hoy el esqueleto + autenticación están listos; el resto de
-endpoints devuelven datos MOCK. La meta es reemplazar cada mock por lógica real contra Supabase,
-capa por capa (Clean Architecture: `endpoints → services → repositories → models/DB`).
+Dejar **todo el backend funcional, seguro y desplegable** para que el Frontend (React Native/Expo)
+lo conecte sin tocar lógica. Clean Architecture: `endpoints → services → repositories → models/DB`.
 
 ---
 
-## ✅ Hecho
+## 🟢 Estado actual (de un vistazo)
 
-- Base de datos + migración Alembic (`backend/alembic/versions/3265caf90a58_initial_schema.py`).
-- RLS policies + triggers de Supabase Auth activos.
-- Modelos SQLAlchemy (todos): user, allergen, product, scan, report, cache.
-- Schemas Pydantic (todos): scan, user, allergen, product, report, error, common, auth.
-- App FastAPI corre con Swagger en `/docs`, router v1, rate limiter (slowapi), excepciones de dominio.
-- **Auth real**: `POST /api/v1/auth/register` y `/login` → Supabase Auth.
-- **JWT real**: `core/security.py:get_current_user` valida el token vía `supabase.auth.get_user()`.
-- **Engine async** lazy a Postgres (`infrastructure/database.py`, asyncpg).
+| Área | Estado |
+|------|--------|
+| Esqueleto FastAPI + Swagger + rate limiter + excepciones | ✅ |
+| Auth (register/login) + JWT (Supabase) | ✅ real |
+| Capas `repositories/` + `services/` + `detection.py` | ✅ completas |
+| Endpoints (`/allergens`, `/users/me`(+allergies/scans), `/products`, `/scan`, `/reports`) | ✅ conectados a BD |
+| Seed 14 alérgenos (UE 1169/2011 ≈ Codex) | ✅ cargado en Supabase |
+| **Google Vision OCR** | ✅ **real y verificado** (key activa) |
+| **Supabase Storage** (fotos reportes) | ✅ bucket `product-reports` creado + subida verificada |
+| Security headers + auth hardening | ✅ |
+| Tests unitarios (detección/normalizer) | ✅ 15 verde |
+| Tests integración lectura (catálogo/producto) | ✅ verde |
+| Docker (Dockerfile/compose/.dockerignore) | ✅ archivos listos (build pendiente de Docker Desktop) |
 
----
-
-## 🔧 En progreso
-
-- **Nada pendiente de la lógica de negocio.** Falta solo lo que depende de credenciales
-  externas (Vision API key, Storage bucket) y tests de integración con BD.
-
----
-
-## 📋 Falta (checklist)
-
-### Capas nuevas
-- [x] `repositories/base.py` (genérico) + `allergen_repo`, `product_repo`, `user_repo`, `scan_history_repo`, `cache_repo`, `report_repo`
-- [x] `services/`: `allergen_service`, `user_service`, `product_service`, `text_normalizer`, `detection`, `cache_service`, `scan_service`
-- [x] `infrastructure/storage_client.py` (Supabase Storage real + validación MIME/firma/tamaño)
-- [x] `scripts/seed_allergens.py` (14 alérgenos estándar UE/Codex, idempotente) — **cargado en Supabase**
-- [x] `tests/` unit (detección + normalizer) — 15 tests verde
-- [ ] `tests/` de integración con BD (requiere usuario de prueba)
-- [ ] Dockerfile + docker-compose
-
-### Endpoints (mock → conectado a BD) ✅ todos hechos
-- [x] `GET /api/v1/allergens` — catálogo real desde BD (verificado: 14 cat / 14 alérgenos)
-- [x] `GET/PUT /api/v1/users/me` + `PUT /me/allergies` + `GET /me/scans`
-- [x] `GET /api/v1/products/{barcode}`
-- [x] `POST /api/v1/scan` — pipeline completo (OCR mock → normalizar → detectar → cache → guardar)
-- [x] `POST /api/v1/reports` — guardar reporte + subir foto (storage guarda sin foto hasta tener bucket)
-- [x] `get_current_admin` — valida `profiles.is_admin` en BD
-
-### Fix importante
-- [x] **Bug latente resuelto**: el ORM no resolvía el FK `profiles.id → auth.users.id`
-  (tabla gestionada por Supabase, ausente del metadata). Se añadió un stub `auth.users`
-  en `models/user.py` (Alembic la ignora vía `include_name`). Sin esto, NINGUNA query ORM
-  funcionaba — nadie lo notó porque auth usa el cliente `supabase-py`, no el ORM.
+**Resumen**: el backend está funcional de punta a punta contra Supabase con OCR real.
+Falta cerrar tests e2e de escritura, probar `/scan` con foto real y desplegar.
 
 ---
 
-## ⚠️ Problemas / Bloqueos
+## 📋 Pasos restantes
 
-1. **Catálogo de alérgenos vacío en BD.** Sin seed, `/allergens` real devuelve vacío y el scan no
-   detecta nada. → Necesita `seed_allergens.py`. Los datos (qué alérgenos, synonyms, ocr_variants)
-   se curan a mano (estándar latino ~14 mayores). **Se mostrará la lista al usuario antes de cargar.**
-2. **Google Vision = MOCK.** `vision_client.py` devuelve texto fijo. El pipeline se construye y prueba
-   con el mock; el OCR real necesita la API key. → Ver sección API keys.
-3. **Supabase Storage** sin bucket configurado para fotos de reportes. → Ver sección API keys.
-4. **RLS bypass**: el backend conecta a Postgres directo (asyncpg) → NO aplica `auth.uid()` de RLS.
-   Los repositories DEBEN filtrar por `user_id` manualmente en cada query de datos del usuario.
-5. **Python 3.14**: ya hubo ajustes de compatibilidad; vigilar libs async (asyncpg / SQLAlchemy).
+- [ ] **Tests e2e de escritura** (perfil/scan) vía Supabase Admin API ⬅️ *siguiente recomendado*
+- [ ] **Probar `/scan` real** con foto de etiqueta (`photos/foto1.webp`)
+- [ ] **Deploy a Google Cloud Run** (requiere `gcloud auth login` del usuario)
+- [ ] `docker build` + `docker compose up` (requiere Docker Desktop arrancado)
+- [ ] (futuro) endpoints admin (revisar reportes), CI, observabilidad
 
 ---
 
-## 🔑 Cuándo necesito API keys (acción del usuario)
+## ⚠️ Notas técnicas / gotchas
 
-| Cuándo | Qué se necesita | Acción del usuario | Mientras tanto |
-|---|---|---|---|
-| Pipeline de **scan real** | Google Cloud Vision API key | Crear proyecto en Google Cloud → habilitar Vision API → generar key → pegar en `.env` (`GOOGLE_CLOUD_API_KEY`) | Mock de OCR (texto simulado) |
-| **Reportes** con foto | Supabase Storage bucket + creds | Crear bucket privado en Supabase → confirmar `SUPABASE_SERVICE_ROLE_KEY` en `.env` | Reporte sin foto / placeholder |
-
-> El código queda listo para que, al pegar la key, funcione sin cambios.
+1. **RLS bypass**: el backend conecta a Postgres directo (asyncpg) → no aplica `auth.uid()`.
+   Los repositories **filtran por `user_id` manualmente** en cada query de datos del usuario.
+2. **FK `profiles.id → auth.users.id`**: requiere un stub `auth.users` en `models/user.py` para que
+   el ORM resuelva el FK (Alembic lo ignora vía `include_name`). Sin esto, ninguna query ORM corre.
+3. **Tests asyncpg + asyncio**: el fixture usa engine con `NullPool` dedicado por test para evitar
+   "Event loop is closed".
+4. **Python 3.14**: vigilar compatibilidad de libs async.
+5. **Secretos**: `SUPABASE_SERVICE_ROLE_KEY` y demás solo en `.env` (gitignored) / Secret Manager.
+   Nunca en frontend ni en la imagen Docker.
 
 ---
 
 ## 🔌 Para el Frontend (cómo conectar)
 
 - **Base URL dev**: `http://<IP_DEL_BACKEND>:8000/api/v1`
-- **Auth**: el frontend usa **Supabase JS** directo para `signUp` / `signInWithPassword`
-  (ver `docs/FRONTEND_AUTH_GUIDE.md`). Luego manda en cada request:
-  `Authorization: Bearer <access_token>`.
-- **Endpoints listos hoy**:
-  - `POST /auth/register`, `POST /auth/login` (también se puede via Supabase JS directo)
-  - `GET /` health check
-- **Endpoints en construcción** (contratos ya definidos en la Biblia Técnica, sección 7):
-  `/allergens`, `/users/me`, `/users/me/allergies`, `/users/me/scans`, `/products/{barcode}`,
-  `/scan`, `/reports`.
-- **Swagger** (pruebas): `http://localhost:8000/docs` → botón **Authorize** con el JWT.
+- **Auth**: el frontend usa **Supabase JS** para `signUp`/`signInWithPassword` (ver
+  `docs/FRONTEND_AUTH_GUIDE.md`) y manda `Authorization: Bearer <access_token>` en cada request.
+- **Endpoints** (contratos en la Biblia Técnica §7): `/auth/register`, `/auth/login`, `/allergens`,
+  `/users/me` (+`/allergies`, `/scans`), `/products/{barcode}`, `/scan`, `/reports`, `GET /` health.
+- **Swagger**: `http://localhost:8000/docs` → **Authorize** con el JWT.
 
 ---
 
-## 🗓️ Bitácora
+## 🗓️ Bitácora (por hitos)
 
-- **2026-06-09 (1)**: Creado este doc. Memoria persistente inicializada. Estado base auditado
-  (auth real, resto mock). Arranca construcción de la capa `repositories/`.
-- **2026-06-09 (6)**: Fase 2 — Bloque D (Docker):
-  - `backend/Dockerfile` (python:3.14-slim, usuario no-root `appuser`, CMD respeta `$PORT` para Cloud Run),
-    `backend/.dockerignore` (excluye `.venv`, `.env`, `tests`), `backend/docker-compose.yml` (api + env_file).
-  - Verificado: Docker 29.0.1 instalado; `.env` ignorado por git y no trackeado.
-  - **Pendiente**: `docker build` no se pudo correr porque Docker Desktop (daemon) no estaba arrancado.
-    Al iniciarlo: `cd backend; docker build -t allergensmart-api .` y `docker compose up`.
-- **2026-06-09 (5)**: Fase 2 — Bloque C (Tests de integración):
-  - `pytest.ini` (asyncio_mode=auto, marker `integration`), `tests/conftest.py` (fixture `db_session`
-    con engine NullPool dedicado → evita "Event loop is closed").
-  - Tests de lectura contra Supabase: catálogo (14 alérgenos, gluten+sinónimos) y producto inexistente
-    → `ProductNotFoundException`. Total: **19 passed, 2 skipped** (escritura pospuesta a usuario de prueba).
-- **2026-06-09 (4)**: Fase 2 — Bloque B (Google Vision REAL activado):
-  - `vision_client.py`: llamada real a `images:annotate` (TEXT_DETECTION, languageHints es) vía httpx;
-    validación de imagen (firma/MIME/≤10MB) antes de enviar; errores → `VisionAPIException` genérica.
-  - Verificado en vivo: la API key del usuario funciona (smoke test 1x1 → OCRNoTextException).
-  - **Vision ya NO es mock** (solo cae a mock si la key está vacía).
-- **2026-06-09 (3)**: Fase 2 — Bloque A (Hardening seguridad):
-  - `core/middleware.py`: SecurityHeadersMiddleware (CSP, X-Frame-Options, nosniff, Referrer-Policy;
-    HSTS solo en producción; CSP relajada solo en /docs).
-  - `endpoints/auth.py`: errores genéricos (sin `str(e)`), rate limit `5/minute` en login/register,
-    audit log de intentos sin datos sensibles.
-- **2026-06-09 (2)**: Sprint completo de lógica de negocio:
-  - Construidas capas `repositories/` y `services/` enteras + `detection.py` (motor fuzzy).
-  - Todos los endpoints (allergens, users, products, scan, reports) conectados a BD real.
-  - Seed de los 14 alérgenos estándar (UE 1169/2011 ≈ Codex) cargado y verificado en Supabase.
-  - 15 tests unitarios verde (detección + normalizador OCR).
-  - Resuelto bug latente del FK `auth.users` que bloqueaba todo el ORM.
-  - **Pendiente externo**: Google Vision API key (scan real) y Supabase Storage bucket (fotos).
+### Hito 1 — Lógica de negocio (2026-06-09)
+Auditoría inicial (auth real, resto mock) → construcción de las capas `repositories/` y `services/`
++ `detection.py` (motor fuzzy). Todos los endpoints conectados a BD. Seed de 14 alérgenos cargado.
+15 tests unitarios verde. Resuelto el bug latente del FK `auth.users` que bloqueaba todo el ORM.
+
+### Hito 2 — Fase 2: seguridad, Vision, tests, Docker (2026-06-09)
+- **Seguridad**: `core/middleware.py` (security headers; HSTS solo prod); `auth.py` con errores
+  genéricos (sin `str(e)`), rate limit 5/min y audit log.
+- **Vision REAL**: `vision_client.py` llama a `images:annotate` (TEXT_DETECTION, hint es) con httpx +
+  validación de imagen previa. Key del usuario verificada en vivo. Ya no es mock.
+- **Tests integración**: `pytest.ini` + `conftest.py` (NullPool). Lectura contra Supabase: 19✓/2 skip.
+- **Docker**: `Dockerfile` (no-root, `$PORT` para Cloud Run) + `.dockerignore` + `docker-compose.yml`.
+
+### Hito 3 — Fase 3: Storage, docs, e2e, scan real, deploy (2026-06-09)
+- **Storage**: bucket `product-reports` creado; subida verificada (devuelve signed URL).
+- **Docs**: borrados `docs/README.md` y `backend/README.md` (redundantes); README raíz con guía de
+  arranque correcta + sección Deploy; este doc reestructurado.
+- **Tests e2e** (`tests/test_integration_user_write.py` + fixture `e2e_user` en `conftest.py`):
+  crea/borra usuario real vía Admin API; borrado por SQL directo sobre `auth.users` (el HTTP de GoTrue
+  daba ReadTimeout). Verifica `replace_allergies` y `scan` (Vision monkeypatched) → danger + historial.
+- **`/scan` REAL verificado**: `scripts/scan_image.py` sobre `backend/photos/foto1.webp` (etiqueta de
+  vitaminas) → Vision OCR real → detectó **lactosa** (`lactose`) → **DANGER**. Pipeline real OK.
+- **Deploy Cloud Run preparado**: `scripts/deploy_cloudrun.ps1` + sección Deploy en README.
+  Pendiente de acción del usuario: `gcloud auth login` + crear secretos + correr el script.
