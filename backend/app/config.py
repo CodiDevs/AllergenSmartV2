@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 10
 
     # === Monitoring ===
+    # Sentry inactivo hasta producción (su init en main.py está comentado).
     sentry_dsn: str = ""
 
     @property

@@ -27,5 +27,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Cloud Run inyecta $PORT; en local cae a 8000.
+# Respeta $PORT si el entorno lo define; en local cae a 8000.
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -40,7 +40,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         else:
             response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
 
-        # HSTS solo en producción (HTTPS forzado en Cloud Run)
+        # HSTS solo en producción (HTTPS forzado por el proxy/hosting)
         if settings.is_production:
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains"

@@ -58,25 +58,14 @@ python -m pytest tests/ -q
 
 ---
 
-## ☁️ Deploy (Google Cloud Run)
+## 🐳 Docker (local)
 
-El backend se empaqueta con `backend/Dockerfile` (imagen no-root) y se despliega como contenedor
-serverless. Los secretos van en **Google Secret Manager**, nunca horneados en la imagen.
-
-**Una sola vez** (requiere `gcloud` instalado):
+El backend se empaqueta con `backend/Dockerfile` (imagen no-root). Para correrlo en local:
 ```powershell
-gcloud auth login
-gcloud config set project <TU_PROJECT_ID>
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com vision.googleapis.com secretmanager.googleapis.com
-# Crear secretos (pega el valor cuando lo pida):
-gcloud secrets create SUPABASE_SERVICE_ROLE_KEY --replication-policy=automatic
-gcloud secrets create DATABASE_URL --replication-policy=automatic
-gcloud secrets create GOOGLE_CLOUD_API_KEY --replication-policy=automatic
-# ... y agregar una versión a cada uno con su valor
+cd backend
+docker compose up --build
 ```
+Los secretos se leen de `backend/.env` (nunca se hornean en la imagen).
 
-**Cada deploy** — edita las variables en `backend/scripts/deploy_cloudrun.ps1` y corre desde `backend/`:
-```powershell
-.\scripts\deploy_cloudrun.ps1
-```
-`ENVIRONMENT=production` activa HSTS. Verifica: `curl -I https://<URL>/` debe responder healthy + headers.
+> **Deploy a producción:** aún no aplica. El despliegue a la nube se definirá cuando el proyecto
+> entre a producción; por ahora el backend corre solo en local.

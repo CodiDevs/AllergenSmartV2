@@ -112,7 +112,8 @@ class VisionClient:
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                 resp = await client.post(
                     _VISION_URL,
-                    params={"key": settings.google_cloud_api_key},
+                    # API key por header (no en el query string) para que no quede en logs/URLs.
+                    headers={"X-Goog-Api-Key": settings.google_cloud_api_key},
                     json=payload,
                 )
         except httpx.HTTPError:
