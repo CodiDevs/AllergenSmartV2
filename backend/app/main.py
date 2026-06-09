@@ -13,6 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from app.api.v1.router import router as v1_router
 from app.config import settings
 from app.core.exceptions import DomainException
+from app.core.middleware import SecurityHeadersMiddleware
 from app.core.rate_limiter import limiter
 
 
@@ -64,6 +65,11 @@ Manta, Ecuador — optimizado para etiquetas ecuatorianas (INEN, ARCSA)
 # Rate Limiter
 # =====================================================================
 app.state.limiter = limiter
+
+# =====================================================================
+# Security Headers (HSTS, CSP, X-Frame-Options, nosniff...)
+# =====================================================================
+app.add_middleware(SecurityHeadersMiddleware)
 
 # =====================================================================
 # CORS

@@ -106,6 +106,27 @@ capa por capa (Clean Architecture: `endpoints → services → repositories → 
 
 - **2026-06-09 (1)**: Creado este doc. Memoria persistente inicializada. Estado base auditado
   (auth real, resto mock). Arranca construcción de la capa `repositories/`.
+- **2026-06-09 (6)**: Fase 2 — Bloque D (Docker):
+  - `backend/Dockerfile` (python:3.14-slim, usuario no-root `appuser`, CMD respeta `$PORT` para Cloud Run),
+    `backend/.dockerignore` (excluye `.venv`, `.env`, `tests`), `backend/docker-compose.yml` (api + env_file).
+  - Verificado: Docker 29.0.1 instalado; `.env` ignorado por git y no trackeado.
+  - **Pendiente**: `docker build` no se pudo correr porque Docker Desktop (daemon) no estaba arrancado.
+    Al iniciarlo: `cd backend; docker build -t allergensmart-api .` y `docker compose up`.
+- **2026-06-09 (5)**: Fase 2 — Bloque C (Tests de integración):
+  - `pytest.ini` (asyncio_mode=auto, marker `integration`), `tests/conftest.py` (fixture `db_session`
+    con engine NullPool dedicado → evita "Event loop is closed").
+  - Tests de lectura contra Supabase: catálogo (14 alérgenos, gluten+sinónimos) y producto inexistente
+    → `ProductNotFoundException`. Total: **19 passed, 2 skipped** (escritura pospuesta a usuario de prueba).
+- **2026-06-09 (4)**: Fase 2 — Bloque B (Google Vision REAL activado):
+  - `vision_client.py`: llamada real a `images:annotate` (TEXT_DETECTION, languageHints es) vía httpx;
+    validación de imagen (firma/MIME/≤10MB) antes de enviar; errores → `VisionAPIException` genérica.
+  - Verificado en vivo: la API key del usuario funciona (smoke test 1x1 → OCRNoTextException).
+  - **Vision ya NO es mock** (solo cae a mock si la key está vacía).
+- **2026-06-09 (3)**: Fase 2 — Bloque A (Hardening seguridad):
+  - `core/middleware.py`: SecurityHeadersMiddleware (CSP, X-Frame-Options, nosniff, Referrer-Policy;
+    HSTS solo en producción; CSP relajada solo en /docs).
+  - `endpoints/auth.py`: errores genéricos (sin `str(e)`), rate limit `5/minute` en login/register,
+    audit log de intentos sin datos sensibles.
 - **2026-06-09 (2)**: Sprint completo de lógica de negocio:
   - Construidas capas `repositories/` y `services/` enteras + `detection.py` (motor fuzzy).
   - Todos los endpoints (allergens, users, products, scan, reports) conectados a BD real.
