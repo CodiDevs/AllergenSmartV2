@@ -4,10 +4,12 @@ Verifica tokens en cada request protegido.
 """
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import create_client, Client
 
 from app.config import settings
 from app.core.exceptions import UnauthorizedException
+from app.infrastructure.database import get_db
 
 # Esquema de seguridad para Swagger UI
 bearer_scheme = HTTPBearer()
@@ -59,11 +61,23 @@ async def get_current_user(
 
 async def get_current_admin(
     user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
     Dependencia FastAPI — requiere que el usuario sea admin.
-    Úsala en endpoints de administración.
+    Valida profiles.is_admin = true en la BD. Úsala en endpoints de administración.
     """
-    # TODO: verificar profiles.is_admin = true en la BD
-    # Por ahora, stub — implementar cuando tengamos la conexión a BD
+    from uuid import UUID
+
+    from app.repositories.user_repo import UserRepository
+
+    if not await UserRepository(db).is_admin(UUID(user["user_id"])):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error_code": "FORBIDDEN",
+                "message": "No tienes permisos de administrador.",
+                "action_required": "NONE",
+            },
+        )
     return user

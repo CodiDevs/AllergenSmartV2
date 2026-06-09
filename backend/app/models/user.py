@@ -6,10 +6,22 @@ Profile extiende auth.users de Supabase (mismo UUID).
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String, func
+from sqlalchemy import Boolean, Column, ForeignKey, String, Table, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
+
+
+# Stub de la tabla auth.users (gestionada por Supabase, NO por Alembic).
+# Solo existe en el metadata para que el ORM pueda resolver el FK
+# profiles.id -> auth.users.id en runtime. Alembic la ignora vía include_name.
+auth_users = Table(
+    "users",
+    Base.metadata,
+    Column("id", PG_UUID(as_uuid=True), primary_key=True),
+    schema="auth",
+)
 
 
 class Profile(Base, TimestampMixin):
