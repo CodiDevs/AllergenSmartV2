@@ -3,13 +3,15 @@ Endpoint: POST /api/v1/scan
 El endpoint más importante del sistema.
 Recibe imagen + barcode → OCR → detección de alérgenos → respuesta.
 """
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_user
 from app.core.rate_limiter import limiter
 from app.schemas.scan import ScanRequest, ScanResponse
-from app.schemas.common import AlertLevel, MatchType, Severity
+from app.services.scan_service import ScanService
 
 router = APIRouter(prefix="/scan", tags=["Escaneo"])
 
@@ -29,24 +31,11 @@ async def scan_label(
 ) -> ScanResponse:
     """
     Flujo completo de escaneo:
-    1. Verificar caché L1 (product verified_by_admin)
-    2. Verificar caché L2 (ocr_cache)
-    3. Llamar a Vision API (L3)
-    4. Normalizar texto OCR
-    5. Detectar alérgenos (fast path → direct → fuzzy)
-    6. Guardar en scan_history
-    7. Responder
+    1. Cargar alergias del usuario (del JWT)
+    2. Resolver ingredientes vía caché 3 niveles (L1 product / L2 ocr_cache / L3 Vision)
+    3. Detectar alérgenos (fast path → directo → fuzzy + advertencias)
+    4. Calcular nivel de alerta
+    5. Guardar en scan_history
+    6. Responder
     """
-    # TODO: implementar ScanService.process_scan()
-    return ScanResponse(
-        success=True,
-        alert_level=AlertLevel.SAFE,
-        message="✅ No se detectaron alérgenos conocidos en este producto.",
-        confidence=0.92,
-        from_cache=False,
-        processing_time_ms=0,
-        detected_text="[scan service not yet implemented]",
-        ingredients=[],
-        allergens_found=[],
-        warnings=[],
-    )
+    return await ScanService(db).process_scan(UUID(current_user["user_id"]), body)

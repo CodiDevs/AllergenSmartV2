@@ -4,7 +4,8 @@ Configura la app, middleware, CORS, routers y exception handlers.
 """
 from contextlib import asynccontextmanager
 
-import sentry_sdk
+# Monitoreo de producción (Sentry) — desactivado hasta que el proyecto vaya a producción.
+# import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,6 +14,7 @@ from slowapi.errors import RateLimitExceeded
 from app.api.v1.router import router as v1_router
 from app.config import settings
 from app.core.exceptions import DomainException
+from app.core.middleware import SecurityHeadersMiddleware
 from app.core.rate_limiter import limiter
 
 
@@ -23,11 +25,9 @@ from app.core.rate_limiter import limiter
 async def lifespan(app: FastAPI):
     """Configura recursos al iniciar y los limpia al cerrar."""
     # Startup
-    if settings.sentry_dsn and settings.is_production:
-        sentry_sdk.init(
-            dsn=settings.sentry_dsn,
-            environment=settings.environment,
-        )
+    # Sentry (monitoreo de errores en prod) — reactivar al ir a producción:
+    #   if settings.sentry_dsn and settings.is_production:
+    #       sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment)
     print(f"[START] {settings.app_name} v{settings.app_version} [{settings.environment}] arrancando...")
     yield
     # Shutdown
@@ -66,14 +66,20 @@ Manta, Ecuador — optimizado para etiquetas ecuatorianas (INEN, ARCSA)
 app.state.limiter = limiter
 
 # =====================================================================
+# Security Headers (HSTS, CSP, X-Frame-Options, nosniff...)
+# =====================================================================
+app.add_middleware(SecurityHeadersMiddleware)
+
+# =====================================================================
 # CORS
 # =====================================================================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Least privilege: solo los métodos y headers que la API realmente usa (no "*").
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # =====================================================================

@@ -1,4 +1,3 @@
-from typing import Optional
 """
 Modelo SQLAlchemy: ProductReport.
 Crowdsourcing — los usuarios reportan productos locales no catalogados.

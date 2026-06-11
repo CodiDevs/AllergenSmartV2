@@ -13,6 +13,9 @@ class ScanRequest(BaseModel):
     image_base64: str = Field(
         ...,
         min_length=100,
+        # 10 MB de imagen ≈ 13.4 MB en base64; 14_000_000 deja margen para el prefijo data URI.
+        # Cota el tamaño del body ANTES de decodificar (evita cargar payloads gigantes en memoria).
+        max_length=14_000_000,
         description="Imagen de la etiqueta codificada en base64 (con o sin data URI prefix)",
     )
     barcode: Optional[str] = Field(

@@ -19,7 +19,7 @@ rapidfuzz==3.14.5
 unidecode==1.3.8
 
 # Security
-python-jose[cryptography]==3.3.0
+# (python-jose removido: no se usaba — el JWT lo valida Supabase auth.get_user — y arrastraba CVEs)
 slowapi==0.1.9
 
 # File handling

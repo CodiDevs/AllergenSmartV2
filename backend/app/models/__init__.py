@@ -1,4 +1,3 @@
-from typing import Optional
 """
 Exporta todos los modelos SQLAlchemy para que Alembic los detecte automáticamente.
 IMPORTANTE: todos los modelos deben importarse aquí para que Base.metadata los incluya.

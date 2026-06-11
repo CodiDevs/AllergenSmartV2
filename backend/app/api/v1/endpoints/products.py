@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.schemas.product import ProductResponse
 from app.schemas.error import ErrorResponse
-from app.core.exceptions import ProductNotFoundException
+from app.services.product_service import ProductService
 
 router = APIRouter(prefix="/products", tags=["Productos"])
 
@@ -24,5 +24,4 @@ async def get_product_by_barcode(
     db: AsyncSession = Depends(get_db),
 ) -> ProductResponse:
     """Busca un producto en el catálogo por su código de barras. Endpoint público."""
-    # TODO: implementar ProductRepository.get_by_barcode()
-    raise ProductNotFoundException(barcode=barcode)
+    return await ProductService(db).get_by_barcode(barcode)

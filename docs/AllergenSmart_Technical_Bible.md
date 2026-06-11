@@ -3,7 +3,9 @@
 > **Documento maestro para el desarrollo completo del proyecto.**
 > Versión: 2.0 | Fecha: Junio 2026 | Mercado: Manta, Ecuador
 > 
-> ✅ **ESTADO DE IMPLEMENTACIÓN:** Base de datos y migraciones (Alembic) implementadas con éxito. RLS policies y Triggers (Supabase Auth) activos. Endpoints base de FastAPI corriendo. Resoluciones aplicadas para compatibilidad con Python 3.14.
+> ✅ **ESTADO DE IMPLEMENTACIÓN:** Base de datos y migraciones (Alembic) implementadas con éxito. RLS habilitado vía migración Alembic `b7f2a9c4e1d3_enable_rls.py` + Triggers (Supabase Auth) activos. Backend funcional de punta a punta (todos los endpoints conectados a Supabase, OCR real, Storage). Resoluciones aplicadas para compatibilidad con Python 3.14.
+>
+> ℹ️ **Nota de despliegue:** el deploy a Google Cloud Run se retiró del repo por ahora (el proyecto aún no va a producción). Ver §12.5.
 
 ---
 
@@ -645,6 +647,13 @@ CREATE INDEX idx_products_brand ON products(brand) WHERE brand IS NOT NULL;
 ```
 
 ### 6.4 Row Level Security (RLS)
+
+> [!IMPORTANT]
+> **Estado:** RLS está **implementado y aplicado** mediante la migración Alembic
+> `b7f2a9c4e1d3_enable_rls.py` (la fuente canónica de las policies). El SQL de abajo es la referencia
+> de diseño. **El backend conecta con el rol `postgres` de Supabase (BYPASSRLS)** y filtra por
+> `user_id` manualmente en cada repositorio; RLS es defensa en profundidad para accesos vía los roles
+> `anon`/`authenticated` (p.ej. Supabase JS directo desde el frontend).
 
 ```sql
 -- profiles: solo tu propio perfil
@@ -1303,7 +1312,7 @@ Todos los errores HTTP 400+ **deben** devolver esta estructura:
 | HTTP | `error_code` | `message` | `action_required` |
 |---|---|---|---|
 | 400 | `INVALID_IMAGE` | "La imagen proporcionada no es válida o está corrupta." | `RETAKE_PHOTO` |
-| 400 | `IMAGE_TOO_LARGE` | "La imagen excede el tamaño máximo de 5 MB." | `COMPRESS_IMAGE` |
+| 400 | `IMAGE_TOO_LARGE` | "La imagen excede el tamaño máximo de 10 MB." | `COMPRESS_IMAGE` |
 | 400 | `MISSING_IMAGE` | "No se proporcionó una imagen para escanear." | `RETAKE_PHOTO` |
 | 401 | `UNAUTHORIZED` | "Tu sesión ha expirado. Inicia sesión nuevamente." | `REDIRECT_LOGIN` |
 | 404 | `PRODUCT_NOT_FOUND` | "No se encontró un producto con ese código de barras." | `SCAN_LABEL` |
@@ -1387,7 +1396,9 @@ async def scan(request: Request, ...):
 
 | Validación | Valor | Razón |
 |---|---|---|
-| Tamaño máximo | 5 MB | Evitar abuso de almacenamiento y memoria |
+| Tamaño máximo | 10 MB | Evitar abuso de almacenamiento y memoria (`storage_client.MAX_FILE_BYTES`) |
+| Cota del body (pre-decode) | `max_length=14_000_000` en `image_base64` | Rechaza payloads gigantes antes de decodificar base64 |
+| Firma de archivo (magic bytes) | JPEG/PNG/WebP | Verifica que el contenido real coincide con el MIME declarado |
 | Formatos permitidos | JPEG, PNG, WebP | Los que soporta Vision API |
 | Base64 válido | Decodificable sin errores | Evitar payloads malformados |
 | Strip data URI prefix | `data:image/...;base64,` | Normalizar input |
@@ -1396,64 +1407,60 @@ async def scan(request: Request, ...):
 
 ## 12. DevOps y Despliegue
 
-### 12.1 Dockerfile (Backend)
+### 12.1 Dockerfile (Backend) — imagen real del repo
+
+> Imagen mínima, usuario **no-root** (`appuser`), respeta `$PORT` si el entorno lo define.
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.14-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Instalar dependencias del sistema
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+# Usuario sin privilegios
+RUN useradd --create-home --uid 1000 appuser
 
-# Copiar e instalar dependencias Python
+# Dependencias primero (mejor cache de capas)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código fuente
-COPY . .
+# Código de la app + migraciones + scripts (seed)
+COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini .
+COPY scripts ./scripts
 
-# Puerto
+USER appuser
 EXPOSE 8000
 
-# Comando de inicio
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Respeta $PORT si el entorno lo define; en local cae a 8000.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 ```
 
-### 12.2 docker-compose.yml (Desarrollo local)
+### 12.2 docker-compose.yml (Desarrollo local) — real del repo
+
+> La BD es **Supabase en la nube**, no se levanta un Postgres local. Los secretos se leen de
+> `backend/.env` (nunca se hornean en la imagen).
 
 ```yaml
-version: "3.8"
-
 services:
   api:
-    build: ./backend
+    build: .
+    container_name: allergensmart-api
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
-    volumes:
-      - ./backend:/app  # Hot reload
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    depends_on:
-      - db
-
-  db:
-    image: supabase/postgres:15.6
-    ports:
-      - "5432:5432"
+      - .env
     environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: allergensmart
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
+      - PORT=8000
+      - ENVIRONMENT=development
+    restart: unless-stopped
 ```
 
-### 12.3 requirements.txt (Actualizado)
+### 12.3 requirements.txt (real del repo)
 
 ```
 # Framework
@@ -1463,22 +1470,21 @@ pydantic-settings==2.9.1
 
 # Database
 sqlalchemy[asyncio]==2.0.36
-asyncpg==0.30.0
+asyncpg==0.31.0
 alembic==1.14.1
 
 # Supabase
-supabase==2.12.0
+supabase==2.30.1
 
-# HTTP Client (para Vision API)
+# HTTP Client (Vision API)
 httpx==0.28.1
 
 # Text Processing
-rapidfuzz==3.10.0
+rapidfuzz==3.14.5
 unidecode==1.3.8
 
 # Security
-python-jose[cryptography]==3.3.0
-slowapi==0.1.9
+slowapi==0.1.9          # (python-jose removido: no se usaba y arrastraba CVEs)
 
 # File handling
 python-multipart==0.0.20
@@ -1486,8 +1492,13 @@ python-multipart==0.0.20
 # Environment
 python-dotenv==1.1.0
 
-# Monitoring
+# Monitoring (inactivo hasta producción; init de Sentry comentado en main.py)
 sentry-sdk[fastapi]==2.19.0
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+email-validator==2.3.0
 ```
 
 ### 12.4 Variables de Entorno (.env)
@@ -1515,24 +1526,17 @@ RATE_LIMIT_PER_MINUTE=10
 SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 ```
 
-### 12.5 Despliegue en Google Cloud Run
+### 12.5 Despliegue en Google Cloud Run — RETIRADO POR AHORA
 
-```bash
-# Build & push
-gcloud builds submit --tag gcr.io/PROJECT_ID/allergensmart-api
-
-# Deploy
-gcloud run deploy allergensmart-api \
-  --image gcr.io/PROJECT_ID/allergensmart-api \
-  --platform managed \
-  --region us-east1 \
-  --allow-unauthenticated \
-  --memory 512Mi \
-  --cpu 1 \
-  --min-instances 0 \
-  --max-instances 10 \
-  --set-env-vars "ENVIRONMENT=production"
-```
+> [!IMPORTANT]
+> El proyecto **aún no va a producción**, así que el andamiaje de Cloud Run se retiró del repo:
+> - Se borró `backend/scripts/deploy_cloudrun.ps1`.
+> - Se quitó la sección Deploy del `README.md` (reemplazada por guía Docker local).
+> - El init de **Sentry** quedó comentado en `app/main.py` (reactivar al ir a producción).
+>
+> **Docker se conserva para uso local** (`docker compose up --build`). Cuando el proyecto entre a
+> producción se redefinirá el despliegue (Cloud Run u otro). El flujo de referencia era:
+> `gcloud run deploy` con secretos en Secret Manager y `ENVIRONMENT=production` (activa HSTS).
 
 ---
 
