@@ -33,7 +33,7 @@ export default function WarningScreen() {
   const isBlurry = scan.warningType === 'blurry';
 
   const handleBack = () => {
-    router.replace('/(tabs)/scanner');
+    router.replace('/(tabs)/scan');
   };
 
   return (

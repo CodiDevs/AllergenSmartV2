@@ -160,7 +160,7 @@ export default function HomeTab() {
 
           <View style={styles.heroText}>
             <Text style={styles.heroEyebrow}>SmartAllergen · listo para escanear</Text>
-            <Text style={styles.heroTitle}>¿Qué vas a{'\n'}comer hoy?</Text>
+            <Text style={styles.heroTitle}>¿Qué producto deseas{'\n'}escanear?</Text>
             
             <TouchableOpacity
               style={styles.scanBtn}

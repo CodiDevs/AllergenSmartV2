@@ -1,7 +1,7 @@
 /**
  * Root Layout — Loads fonts and manages navigation stack & Supabase session routing
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -41,10 +41,26 @@ export default function RootLayout() {
 
   const { session, loading, initialize } = useAuthStore();
 
+  // Inicializar auth una sola vez al montar
   useEffect(() => {
     initialize();
   }, []);
 
+  // Ocultar SplashScreen UNA SOLA VEZ cuando las fuentes estén listas.
+  // Separado del efecto de navegación para evitar llamadas múltiples.
+  const splashHidden = useRef(false);
+  useEffect(() => {
+    if (fontsLoaded && !splashHidden.current) {
+      splashHidden.current = true;
+      SplashScreen.hideAsync().catch(() => {
+        // Ignorar el error de iOS "No native splash screen registered"
+        // que ocurre si hideAsync se llama más de una vez o fuera de contexto.
+      });
+    }
+  }, [fontsLoaded]);
+
+  // Gestión de navegación: redirige según el estado de sesión.
+  // Este efecto puede ejecutarse varias veces — NO llama a hideAsync.
   useEffect(() => {
     if (loading || !fontsLoaded) return;
 
@@ -57,10 +73,6 @@ export default function RootLayout() {
     } else if (session && inAuthGroup) {
       // Redirect to main tabs if session exists
       router.replace('/(tabs)');
-    }
-
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
     }
   }, [session, loading, segments, fontsLoaded]);
 

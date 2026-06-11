@@ -9,6 +9,7 @@
  *   desde el array `history` usando selectores, no se guardan como estado separado.
  */
 import { create } from 'zustand';
+import type { AllergenMatch, ScanSource } from '@/services/api';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,8 @@ export interface HistoryItem {
   confidence?: number;
   allergens: string[];
   rawIngredients: string;
+  /** ID del escaneo en el backend (si ya fue persistido) */
+  backendId?: string;
 }
 
 export interface FavoriteItem {
@@ -46,14 +49,45 @@ export interface FavoriteItem {
 
 // ─── Estado activo del escaneo (se setea antes de navegar a /processing) ──────
 
+/**
+ * ActiveScan — resultado completo de un escaneo.
+ * Contiene tanto los campos mínimos para las pantallas de UI
+ * como los datos enriquecidos del backend (allergens_found detallados).
+ */
 export interface ActiveScan {
   name: string;
   brand: string;
   status: 'safe' | 'warning' | 'danger';
   warningType?: 'blurry' | 'partial';
   confidence?: number;
+  /** Nombres de alérgenos detectados (para compatibilidad con pantallas existentes) */
   allergens: string[];
   rawIngredients: string;
+  /** Lista detallada de alérgenos del backend (match_type, severity, source_ingredient) */
+  allergensDetailed?: AllergenMatch[];
+  /** Advertencias de trazas / "puede contener" */
+  warnings?: string[];
+  /** Texto detectado por OCR */
+  detectedText?: string;
+  /** Si el resultado viene de caché */
+  fromCache?: boolean;
+}
+
+/**
+ * PendingScan — input del usuario antes de enviar al backend.
+ * Se guarda en el store para que processing.tsx lo lea y llame al API.
+ */
+export interface PendingScan {
+  /** Fuente del escaneo */
+  scanSource: ScanSource;
+  /** Imagen en base64 (para modo cámara o galería) */
+  imageBase64?: string;
+  /** Texto de ingredientes ingresado manualmente */
+  manualText?: string;
+  /** Nombre del producto ingresado manualmente (solo para UI) */
+  productName?: string;
+  /** Código de barras (opcional) */
+  barcode?: string;
 }
 
 export type UiScale = 'small' | 'medium' | 'large';
@@ -76,6 +110,9 @@ interface AppState {
   // Escaneo en curso (se usa para pasar datos entre pantallas)
   activeScan: ActiveScan | null;
 
+  // Input pendiente de enviar al backend (se lee en processing.tsx)
+  pendingScan: PendingScan | null;
+
   // ─── Acciones ───────────────────────────────────────────────────────────────
 
   // Alérgenos
@@ -96,6 +133,9 @@ interface AppState {
   // Escaneo activo
   setActiveScan: (scan: ActiveScan | null) => void;
 
+  // Escaneo pendiente
+  setPendingScan: (scan: PendingScan | null) => void;
+
   // Accesibilidad
   setUiScale: (scale: UiScale) => void;
 }
@@ -109,6 +149,7 @@ export const useAppStore = create<AppState>((set) => ({
   history: [],
   favorites: [],
   activeScan: null,
+  pendingScan: null,
 
   // ─── Alérgenos ──────────────────────────────────────────────────────────────
 
@@ -154,7 +195,7 @@ export const useAppStore = create<AppState>((set) => ({
       const now = new Date();
       const newItem: HistoryItem = {
         ...item,
-        id: `h_${Date.now()}`,
+        id: item.backendId ?? `h_${Date.now()}`,
         dateRaw: now,
       };
       return { history: [newItem, ...state.history] };
@@ -168,6 +209,10 @@ export const useAppStore = create<AppState>((set) => ({
   // ─── Escaneo activo ─────────────────────────────────────────────────────────
 
   setActiveScan: (scan) => set({ activeScan: scan }),
+
+  // ─── Escaneo pendiente ──────────────────────────────────────────────────────
+
+  setPendingScan: (scan) => set({ pendingScan: scan }),
 
   // ─── Accesibilidad ──────────────────────────────────────────────────────────
 

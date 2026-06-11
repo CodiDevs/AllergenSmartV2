@@ -20,6 +20,7 @@ class UserService:
     """Lógica de negocio para perfiles de usuario."""
 
     def __init__(self, session: AsyncSession):
+        self.session = session
         self.repo = UserRepository(session)
 
     def _to_response(self, profile) -> UserProfileResponse:
@@ -72,10 +73,39 @@ class UserService:
     ) -> int:
         """
         Reemplaza todas las alergias del usuario (idempotente).
+        Si un allergen_id no es un UUID válido (ej. "aqua"), lo busca o crea en el catálogo.
         Retorna el número de alergias configuradas.
         """
-        allergies = [
-            {"allergen_id": UUID(item.allergen_id), "severity": item.severity.value}
-            for item in data.allergies
-        ]
+        from app.models.allergen import Allergen
+        from sqlalchemy import select
+
+        allergies = []
+        for item in data.allergies:
+            try:
+                allergen_uuid = UUID(item.allergen_id)
+            except ValueError:
+                # No es un UUID, es un nombre manual introducido por el usuario
+                clean_name = item.allergen_id.strip()
+                
+                # Buscar si ya existe (case-insensitive)
+                stmt = select(Allergen).where(Allergen.name.ilike(clean_name))
+                result = await self.session.execute(stmt)
+                existing = result.scalar_one_or_none()
+                
+                if existing:
+                    allergen_uuid = existing.id
+                else:
+                    # Crear alérgeno personalizado
+                    new_allergen = Allergen(
+                        name=clean_name.capitalize(),
+                        synonyms=[clean_name.lower()],
+                        ocr_variants=[],
+                    )
+                    self.session.add(new_allergen)
+                    await self.session.flush() # Obtener UUID generado
+                    allergen_uuid = new_allergen.id
+
+            allergies.append({"allergen_id": allergen_uuid, "severity": item.severity.value})
+
+        # Al usar replace_allergies, hacemos commit de todo junto (incluyendo los nuevos allergens)
         return await self.repo.replace_allergies(user_id, allergies)

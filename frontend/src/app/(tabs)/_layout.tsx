@@ -142,12 +142,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="scanner"
-        options={{
-          href: null,
-        }}
-      />
+
     </Tabs>
   );
 }

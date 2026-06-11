@@ -15,12 +15,13 @@ import { Colors } from '@/constants/Colors';
 import { FontFamily, FontSize } from '@/constants/Typography';
 import { useAppStore, FavoriteItem } from '@/store/appStore';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
+import type { AllergenMatch } from '@/services/api';
 
 export default function ResultScreen() {
   const router = useRouter();
   const { activeScan, addFavorite, addHistoryItem, favorites } = useAppStore();
 
-  // Fallback if no active scan
+  // Fallback si no hay escaneo activo
   const scan = activeScan || {
     name: 'Avena Natural Sin Gluten',
     brand: 'OatLife',
@@ -28,9 +29,17 @@ export default function ResultScreen() {
     confidence: 100,
     allergens: [],
     rawIngredients: 'copos de avena certificada, agua, sal marina, sin conservantes, sin gluten, sin lácteos, trazas: ninguna',
+    allergensDetailed: [],
+    warnings: [],
   };
 
   const isDanger = scan.status === 'danger';
+  const isWarning = scan.status === 'warning';
+  // Lista detallada de alérgenos detectados por el backend
+  const allergensDetailed: AllergenMatch[] = (scan as any).allergensDetailed ?? [];
+  // Advertencias de trazas del backend
+  const warnings: string[] = (scan as any).warnings ?? [];
+
   const themeColors = isDanger
     ? {
         pageBg: '#FFFAFA',
@@ -41,8 +50,22 @@ export default function ResultScreen() {
         heroBg: '#FEECEC',
         mascotState: 'red' as const,
         badgeLabel: 'PELIGRO · NO CONSUMIR',
-        subtitleText: `Marca: ${scan.brand} · ${scan.allergens.length} alérgenos HIGH`,
+        subtitleText: `Marca: ${scan.brand || 'Desconocida'} · ${scan.allergens.length} alérgeno${scan.allergens.length !== 1 ? 's' : ''} detectado${scan.allergens.length !== 1 ? 's' : ''}`,
         btnBg: Colors.danger,
+        btnText: '#FFFFFF',
+      }
+    : isWarning
+    ? {
+        pageBg: '#FFFDF5',
+        headerText: '#7A4E0B',
+        headerIconBg: '#FFF5DC',
+        badgeBg: '#FFE59A',
+        badgeText: '#5C3A00',
+        heroBg: '#FFF5DC',
+        mascotState: 'amber' as const,
+        badgeLabel: 'PRECAUCIÓN · REVISAR',
+        subtitleText: `Marca: ${scan.brand || 'Desconocida'} · ${scan.allergens.length} posible${scan.allergens.length !== 1 ? 's' : ''} alérgeno${scan.allergens.length !== 1 ? 's' : ''}`,
+        btnBg: Colors.warning,
         btnText: '#FFFFFF',
       }
     : {
@@ -54,13 +77,13 @@ export default function ResultScreen() {
         heroBg: '#EAF7F2',
         mascotState: 'green' as const,
         badgeLabel: 'SEGURO · PUEDES COMERLO',
-        subtitleText: `Marca: ${scan.brand} · 0 alérgenos detectados`,
+        subtitleText: `Marca: ${scan.brand || 'Desconocida'} · 0 alérgenos detectados`,
         btnBg: Colors.success,
         btnText: '#FFFFFF',
       };
 
   const handleBack = () => {
-    router.replace('/(tabs)/scanner');
+    router.replace('/(tabs)/scan');
   };
 
   const handlePrimaryAction = () => {
@@ -216,65 +239,101 @@ export default function ResultScreen() {
 
         {/* Details list */}
         <View style={styles.resBody}>
-          {isDanger ? (
-            // Danger details list
+          {(isDanger || isWarning) ? (
+            // Lista de alérgenos detectados (datos reales del backend)
             <>
-              {scan.allergens.map((item, idx) => (
-                <View key={idx} style={styles.allergenRow}>
-                  <View style={[styles.alDot, { backgroundColor: Colors.danger }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.alName, { color: Colors.dangerDark }]}>
-                      {item === 'Gluten' ? 'Gluten (trigo)' : item === 'Lácteos' ? 'Lácteos (leche)' : item}
-                    </Text>
-                    <Text style={styles.alDesc}>
-                      {item === 'Gluten'
-                        ? 'Celiaquía confirmada en tu perfil'
-                        : item === 'Lácteos'
-                        ? 'Intolerancia severa en tu perfil'
-                        : 'Alérgeno detectado en tu perfil'}
-                    </Text>
+              {allergensDetailed.length > 0 ? (
+                allergensDetailed.map((item, idx) => (
+                  <View key={idx} style={styles.allergenRow}>
+                    <View style={[styles.alDot, {
+                      backgroundColor: item.match_type === 'direct' ? Colors.danger
+                        : item.match_type === 'fuzzy' ? Colors.warning
+                        : Colors.warning
+                    }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.alName, { color: isDanger ? Colors.dangerDark : Colors.warningDark }]}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.alDesc}>
+                        Encontrado en: &quot;{item.source_ingredient}&quot; · {item.match_type}
+                      </Text>
+                    </View>
+                    <View style={[styles.alSevBadge, {
+                      backgroundColor: isDanger ? Colors.dangerBorder : Colors.warningBorder
+                    }]}>
+                      <Text style={[styles.alSevBadgeText, {
+                        color: isDanger ? Colors.dangerBadgeText : Colors.warningBadgeText
+                      }]}>
+                        {item.severity.toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={[styles.alSevBadge, { backgroundColor: Colors.dangerBorder }]}>
-                    <Text style={[styles.alSevBadgeText, { color: Colors.dangerBadgeText }]}>HIGH</Text>
+                ))
+              ) : (
+                // Fallback: mostrar nombres simples si no hay detalle
+                scan.allergens.map((name, idx) => (
+                  <View key={idx} style={styles.allergenRow}>
+                    <View style={[styles.alDot, { backgroundColor: Colors.danger }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.alName, { color: Colors.dangerDark }]}>{name}</Text>
+                    </View>
+                    <View style={[styles.alSevBadge, { backgroundColor: Colors.dangerBorder }]}>
+                      <Text style={[styles.alSevBadgeText, { color: Colors.dangerBadgeText }]}>HIGH</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+              {/* Advertencias de trazas del backend */}
+              {warnings.map((warn, idx) => (
+                <View key={`warn_${idx}`} style={[styles.allergenRow, { backgroundColor: Colors.warningSurface, borderColor: Colors.warningBorder }]}>
+                  <View style={[styles.alDot, { backgroundColor: Colors.warning }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.alName, { color: Colors.warningDark }]}>Advertencia</Text>
+                    <Text style={styles.alDesc}>{warn}</Text>
                   </View>
                 </View>
               ))}
             </>
           ) : (
-            // Safe details list
+            // Pantalla segura: mostrar confirmaciones
             <>
               <View style={[styles.allergenRow, styles.allergenRowSafe]}>
                 <View style={[styles.alDot, { backgroundColor: Colors.success }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.alName, { color: Colors.successDark }]}>Sin gluten</Text>
-                  <Text style={styles.alDesc}>Certificado libre de gluten</Text>
+                  <Text style={[styles.alName, { color: Colors.successDark }]}>Sin alérgenos detectados</Text>
+                  <Text style={styles.alDesc}>
+                    {scan.confidence && scan.confidence > 0
+                      ? `Confianza del análisis: ${scan.confidence}%`
+                      : 'Análisis completado'}
+                  </Text>
                 </View>
                 <View style={[styles.alSevBadge, { backgroundColor: Colors.successBorder }]}>
                   <Text style={[styles.alSevBadgeText, { color: Colors.successBadgeText }]}>OK</Text>
                 </View>
               </View>
 
-              <View style={[styles.allergenRow, styles.allergenRowSafe]}>
-                <View style={[styles.alDot, { backgroundColor: Colors.success }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.alName, { color: Colors.successDark }]}>Sin lácteos</Text>
-                  <Text style={styles.alDesc}>No contiene derivados de leche</Text>
+              {warnings.length > 0 && warnings.map((warn, idx) => (
+                <View key={`warn_${idx}`} style={[styles.allergenRow, { backgroundColor: Colors.warningSurface, borderColor: Colors.warningBorder }]}>
+                  <View style={[styles.alDot, { backgroundColor: Colors.warning }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.alName, { color: Colors.warningDark }]}>Trazas posibles</Text>
+                    <Text style={styles.alDesc}>{warn}</Text>
+                  </View>
                 </View>
-                <View style={[styles.alSevBadge, { backgroundColor: Colors.successBorder }]}>
-                  <Text style={[styles.alSevBadgeText, { color: Colors.successBadgeText }]}>OK</Text>
-                </View>
-              </View>
+              ))}
 
-              <View style={[styles.allergenRow, styles.allergenRowSafe]}>
-                <View style={[styles.alDot, { backgroundColor: Colors.success }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.alName, { color: Colors.successDark }]}>Sin trazas</Text>
-                  <Text style={styles.alDesc}>Apto para alta sensibilidad</Text>
+              {scan.rawIngredients.length > 0 && (
+                <View style={[styles.allergenRow, styles.allergenRowSafe]}>
+                  <View style={[styles.alDot, { backgroundColor: Colors.success }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.alName, { color: Colors.successDark }]}>Análisis OCR completado</Text>
+                    <Text style={styles.alDesc}>Texto extraído y verificado correctamente</Text>
+                  </View>
+                  <View style={[styles.alSevBadge, { backgroundColor: Colors.successBorder }]}>
+                    <Text style={[styles.alSevBadgeText, { color: Colors.successBadgeText }]}>OK</Text>
+                  </View>
                 </View>
-                <View style={[styles.alSevBadge, { backgroundColor: Colors.successBorder }]}>
-                  <Text style={[styles.alSevBadgeText, { color: Colors.successBadgeText }]}>OK</Text>
-                </View>
-              </View>
+              )}
             </>
           )}
         </View>

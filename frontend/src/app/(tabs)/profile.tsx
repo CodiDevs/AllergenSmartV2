@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
@@ -22,11 +23,18 @@ import {
 } from '@/store/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiScale } from '@/hooks/useUiScale';
+import {
+  getUserProfile,
+  getAllergenCatalog,
+  updateUserAllergies,
+  mapSeverityToStore,
+  type UserAllergyEntry,
+} from '@/services/api';
 
 export default function ProfileTab() {
   const router = useRouter();
   const scale = useUiScale();
-  const { allergens, addAllergen, removeAllergen, history, uiScale, setUiScale } = useAppStore();
+  const { allergens, addAllergen, removeAllergen, setAllergens, history, uiScale, setUiScale } = useAppStore();
   const { user, signOut } = useAuthStore();
 
   // Nombre y email reales desde Supabase Auth
@@ -37,11 +45,61 @@ export default function ProfileTab() {
   const [newAllergenName, setNewAllergenName] = useState('');
   const [newAllergenSeverity, setNewAllergenSeverity] = useState<'HIGH' | 'MED' | 'LOW'>('HIGH');
   const [newAllergenNote, setNewAllergenNote] = useState('');
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [syncingAllergies, setSyncingAllergies] = useState(false);
 
   // Estadísticas calculadas desde historial real
   const totalScans = history.length;
   const safeCount = useAppStore(selectSafeCount);
   const avoidedCount = useAppStore(selectDangerCount);
+
+  // ─── Cargar perfil del backend al montar ─────────────────────────────────────
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    setLoadingProfile(true);
+    try {
+      const profile = await getUserProfile();
+      // Mapear alergias del backend al formato del store
+      const mappedAllergens: Allergen[] = profile.allergies.map((a) => ({
+        id: a.allergen_id,
+        name: a.allergen_name || a.allergen_id,
+        severity: mapSeverityToStore(a.severity),
+        note: a.category_name || 'Alérgeno del catálogo',
+        icon: 'droplet' as const,
+      }));
+      setAllergens(mappedAllergens);
+    } catch (err: any) {
+      // No mostrar error si el perfil simplemente no tiene alergias aún
+      console.warn('[Profile] No se pudo cargar el perfil:', err?.message);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  /**
+   * Sincroniza la lista actual de alérgenos del store al backend.
+   * Se llama automáticamente después de cada cambio (add/remove).
+   */
+  const syncAllergensToBackend = useCallback(async (updatedAllergens: Allergen[]) => {
+    setSyncingAllergies(true);
+    try {
+      const payload: UserAllergyEntry[] = updatedAllergens.map((a) => ({
+        allergen_id: a.id,
+        severity: a.severity === 'HIGH' ? 'high'
+          : a.severity === 'MED' ? 'medium'
+          : 'low',
+      }));
+      await updateUserAllergies(payload);
+    } catch (err: any) {
+      console.warn('[Profile] No se pudieron sincronizar las alergias:', err?.message);
+      // No lanzamos el error para no interrumpir la UX — el store ya tiene el dato correcto
+    } finally {
+      setSyncingAllergies(false);
+    }
+  }, []);
 
   const initials = userName
     .split(' ')
@@ -51,21 +109,43 @@ export default function ProfileTab() {
     .substring(0, 2)
     .toUpperCase() || '?';
 
-  const handleAddAllergen = () => {
+  const handleAddAllergen = async () => {
     if (!newAllergenName.trim()) {
       alert('Ingresa el nombre del alérgeno');
       return;
     }
     const cleanName = newAllergenName.trim();
-    const id = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    
-    addAllergen({
-      id,
+
+    // Intentar encontrar el alérgeno en el catálogo del backend
+    let allergenId = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    try {
+      const catalog = await getAllergenCatalog();
+      for (const category of catalog.categories) {
+        for (const catalogAllergen of category.allergens) {
+          if (
+            catalogAllergen.name.toLowerCase() === cleanName.toLowerCase() ||
+            catalogAllergen.synonyms.some((s) => s.toLowerCase() === cleanName.toLowerCase())
+          ) {
+            allergenId = catalogAllergen.id;
+            break;
+          }
+        }
+      }
+    } catch {
+      // Si no se puede acceder al catálogo, usar el ID generado localmente
+    }
+
+    const newAllergen: Allergen = {
+      id: allergenId,
       name: cleanName,
       severity: newAllergenSeverity,
       note: newAllergenNote.trim() || 'Añadido manualmente',
       icon: 'droplet',
-    });
+    };
+
+    addAllergen(newAllergen);
+    const updatedList = [...allergens, newAllergen];
+    syncAllergensToBackend(updatedList);
 
     setNewAllergenName('');
     setNewAllergenNote('');
@@ -75,6 +155,12 @@ export default function ProfileTab() {
 
   const handleLogOut = async () => {
     await signOut();
+  };
+
+  const handleRemoveAllergen = (id: string) => {
+    removeAllergen(id);
+    const updatedList = allergens.filter((a) => a.id !== id);
+    syncAllergensToBackend(updatedList);
   };
 
   const getSeverityBadgeStyle = (sev: 'HIGH' | 'MED' | 'LOW') => {
@@ -150,9 +236,14 @@ export default function ProfileTab() {
           {/* Allergens Header Row */}
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Mis alérgenos</Text>
-            <TouchableOpacity onPress={() => setShowAddForm(!showAddForm)}>
-              <Text style={styles.sectionLink}>{showAddForm ? 'Cerrar' : '+ Añadir'}</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {(loadingProfile || syncingAllergies) && (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              )}
+              <TouchableOpacity onPress={() => setShowAddForm(!showAddForm)}>
+                <Text style={styles.sectionLink}>{showAddForm ? 'Cerrar' : '+ Añadir'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Add Allergen Form Dropdown */}
@@ -232,7 +323,7 @@ export default function ProfileTab() {
                     <TouchableOpacity
                       style={styles.deleteBtn}
                       activeOpacity={0.7}
-                      onPress={() => removeAllergen(allergen.id)}
+                      onPress={() => handleRemoveAllergen(allergen.id)}
                     >
                       <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={Colors.danger} strokeWidth="2">
                         <Path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />

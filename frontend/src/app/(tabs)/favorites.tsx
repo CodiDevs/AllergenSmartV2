@@ -143,7 +143,7 @@ export default function FavoritesTab() {
           <TouchableOpacity
             style={styles.addCard}
             activeOpacity={0.8}
-            onPress={() => router.push('/(tabs)/scanner')}
+            onPress={() => router.push('/(tabs)/scan')}
           >
             <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2.2" strokeLinecap="round">
               <Path d="M12 5v14M5 12h14" />

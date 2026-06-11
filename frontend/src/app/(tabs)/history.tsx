@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Platform,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
@@ -14,6 +16,7 @@ import { Colors } from '@/constants/Colors';
 import { FontFamily, FontSize } from '@/constants/Typography';
 import { useAppStore, HistoryItem } from '@/store/appStore';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
+import { getUserScanHistory, mapAlertLevelToStatus } from '@/services/api';
 
 type FilterType = 'Todo' | 'Peligros' | 'Precaución' | 'Seguros';
 
@@ -26,8 +29,66 @@ const getCurrentMonthYear = (): string => {
 
 export default function HistoryTab() {
   const router = useRouter();
-  const { history, setActiveScan } = useAppStore();
+  const { history, setActiveScan, setHistory } = useAppStore();
   const [filter, setFilter] = useState<FilterType>('Todo');
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Cargar historial del backend al montar
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoadingHistory(true);
+    try {
+      const response = await getUserScanHistory(50, 0);
+      const now = new Date();
+      const today = now.toDateString();
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toDateString();
+
+      const mappedItems: HistoryItem[] = response.items.map((item) => {
+        const scannedDate = new Date(item.scanned_at);
+        let dateLabel: string;
+        if (scannedDate.toDateString() === today) {
+          dateLabel = 'Hoy';
+        } else if (scannedDate.toDateString() === yesterdayStr) {
+          dateLabel = 'Ayer';
+        } else {
+          dateLabel = scannedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+        }
+
+        return {
+          id: item.id,
+          backendId: item.id,
+          name: item.product_name || 'Producto escaneado',
+          brand: item.brand || '',
+          detail:
+            item.allergens_found.length > 0
+              ? `${item.allergens_found.length} alérgeno${item.allergens_found.length > 1 ? 's' : ''} detectado${item.allergens_found.length > 1 ? 's' : ''}`
+              : 'Sin alérgenos detectados',
+          time: scannedDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          date: dateLabel,
+          dateRaw: scannedDate,
+          status: mapAlertLevelToStatus(item.alert_level),
+          confidence: Math.round(item.confidence * 100),
+          allergens: item.allergens_found,
+          rawIngredients: item.raw_ingredients,
+        };
+      });
+
+      setHistory(mappedItems);
+    } catch (err: any) {
+      console.warn('[History] No se pudo cargar el historial:', err?.message);
+      // Mantenemos el historial local si hay error de red
+    } finally {
+      setLoadingHistory(false);
+      setRefreshing(false);
+    }
+  };
 
   // Filter logic
   const filteredHistory = history.filter((item) => {
@@ -104,6 +165,14 @@ export default function HistoryTab() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchHistory(true)}
+            tintColor={Colors.primary}
+            colors={[Colors.primary]}
+          />
+        }
       >
         {/* Top Navbar */}
         <View style={styles.topnav}>
@@ -111,11 +180,20 @@ export default function HistoryTab() {
             <Text style={styles.topnavTitle}>Historial</Text>
             <Text style={styles.topnavSub}>{history.length} escaneos · {getCurrentMonthYear()}</Text>
           </View>
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8} accessibilityLabel="Filtrar historial">
-            <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2" strokeLinecap="round">
-              <Path d="M4 6h16M8 12h8M11 18h2" />
-            </Svg>
-          </TouchableOpacity>
+          {loadingHistory ? (
+            <ActivityIndicator size="small" color={Colors.primary} />
+          ) : (
+            <TouchableOpacity
+              style={styles.iconBtn}
+              activeOpacity={0.8}
+              accessibilityLabel="Actualizar historial"
+              onPress={() => fetchHistory(true)}
+            >
+              <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2" strokeLinecap="round">
+                <Path d="M4 6h16M8 12h8M11 18h2" />
+              </Svg>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Filter Scroll Row */}
