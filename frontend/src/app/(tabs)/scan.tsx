@@ -1,10 +1,16 @@
 /**
- * scan.tsx — Pantalla de escaneo real con expo-camera y expo-image-picker.
+ * scan.tsx — Pantalla de escaneo unificada: código de barras + OCR en una sola cámara.
  *
- * Fixes aplicados:
- *  1. Tab bar oculta automáticamente cuando la cámara está activa (useNavigation).
- *  2. Flash real usando enableTorch (no flash prop, que solo aplica al tomar foto).
- *  3. Layout corregido: botones de la cámara por encima del área segura.
+ * Modo HÍBRIDO:
+ *  • La cámara detecta códigos de barras en tiempo real (EAN/UPC/QR).
+ *    → Si el producto está en nuestra BD u Open Food Facts: muestra modal con ingredientes.
+ *    → Si no se encuentra: alerta y se queda en modo OCR (foto manual).
+ *  • El disparador sigue funcionando para tomar foto y hacer OCR completo con Google Vision.
+ *
+ * Fixes originales:
+ *  1. Tab bar oculta automáticamente en modo cámara.
+ *  2. Flash real con enableTorch.
+ *  3. Layout de botones sobre el safe area.
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
@@ -18,17 +24,18 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText as Text } from '@/components/ui/AppText';
 import { router, useNavigation } from 'expo-router';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
 import { FontFamily } from '@/constants/Typography';
 import { useAppStore } from '@/store/appStore';
-import { encodeTextAsBase64 } from '@/services/api';
+import { encodeTextAsBase64, scanProductByBarcode, type BarcodeProductResult } from '@/services/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,13 +46,20 @@ export default function ScanScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  // ─── Estado ────────────────────────────────────────────────────────────────
+  // ─── Estado OCR ────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<ScanMode>('camera');
   const [torchOn, setTorchOn] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [productName, setProductName] = useState('');
   const [ingredientsText, setIngredientsText] = useState('');
   const [barcodeText, setBarcodeText] = useState('');
+
+  // ─── Estado barcode ────────────────────────────────────────────────────────
+  const [barcodeScanning, setBarcodeScanning] = useState(true);  // false mientras procesa
+  const [barcodeLoading, setBarcodeLoading] = useState(false);
+  const [foundProduct, setFoundProduct] = useState<BarcodeProductResult | null>(null);
+  const [lastBarcode, setLastBarcode] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Permiso de cámara ─────────────────────────────────────────────────────
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -137,7 +151,7 @@ export default function ScanScreen() {
       mediaTypes: ['images'],
       quality: 0.75,
       base64: true,
-      allowsEditing: false, // false = permite seleccionar sin recortar
+      allowsEditing: false,
       allowsMultipleSelection: false,
     });
 
@@ -167,6 +181,88 @@ export default function ScanScreen() {
     });
     router.push('/processing');
   }, [ingredientsText, productName, barcodeText]);
+
+  // ─── Barcode detectado por la cámara ──────────────────────────────────────
+  const handleBarcodeScanned = useCallback(
+    (result: BarcodeScanningResult) => {
+      if (!barcodeScanning || barcodeLoading || capturing) return;
+      if (result.data === lastBarcode) return;
+
+      // Debounce: evita procesar el mismo frame dos veces
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        const barcode = result.data.trim();
+        if (!barcode) return;
+
+        setBarcodeScanning(false);
+        setBarcodeLoading(true);
+        setLastBarcode(barcode);
+        setTorchOn(false);
+
+        try {
+          const product = await scanProductByBarcode(barcode);
+          if (product !== null) {
+            // Producto encontrado → mostrar modal con ingredientes
+            setFoundProduct(product);
+          } else {
+            // 404 → producto desconocido, quedarse en modo OCR
+            Alert.alert(
+              '🔍 Código no encontrado',
+              `"${barcode}" no está en la base de datos.\n\nUsa el disparador para fotografiar la etiqueta de ingredientes.`,
+              [
+                { text: 'Fotografiar etiqueta', onPress: () => { setLastBarcode(null); setBarcodeScanning(true); } },
+                { text: 'Reintentar', style: 'cancel', onPress: () => { setLastBarcode(null); setBarcodeScanning(true); } },
+              ]
+            );
+          }
+        } catch (err: any) {
+          Alert.alert(
+            'Error de conexión',
+            err?.message || 'No se pudo consultar el servidor.',
+            [{ text: 'OK', onPress: () => { setLastBarcode(null); setBarcodeScanning(true); } }]
+          );
+        } finally {
+          setBarcodeLoading(false);
+        }
+      }, 350);
+    },
+    [barcodeScanning, barcodeLoading, capturing, lastBarcode]
+  );
+
+  // ─── Analizar con IA (desde el modal de producto encontrado) ──────────────
+  const handleAnalyzeWithAI = useCallback(() => {
+    if (!foundProduct) return;
+    const text =
+      foundProduct.ingredients_text ||
+      foundProduct.ingredients_array.join(', ') ||
+      '';
+
+    if (!text) {
+      Alert.alert(
+        'Sin ingredientes',
+        'Este producto no tiene ingredientes disponibles.\nFotografía la etiqueta para análisis OCR.',
+        [{ text: 'OK', onPress: () => { setFoundProduct(null); setBarcodeScanning(true); } }]
+      );
+      return;
+    }
+
+    setFoundProduct(null);
+    setPendingScan({
+      scanSource: 'manual',
+      imageBase64: encodeTextAsBase64(text),
+      manualText: text,
+      productName: foundProduct.name ?? undefined,
+      barcode: foundProduct.barcode ?? undefined,
+    });
+    router.push('/processing');
+  }, [foundProduct, setPendingScan]);
+
+  // ─── Cerrar modal y reanudar detección ────────────────────────────────────
+  const handleCloseProductModal = useCallback(() => {
+    setFoundProduct(null);
+    setLastBarcode(null);
+    setBarcodeScanning(true);
+  }, []);
 
   // ──────────────────────────────────────────────────────────────────────────
   // RENDER: Modo cámara
@@ -202,13 +298,17 @@ export default function ScanScreen() {
     // Cámara activa — fullscreen sin tab bar
     return (
       <View style={styles.cameraRoot}>
-        {/* Cámara real ocupa TODA la pantalla */}
+        {/* Cámara híbrida: OCR + detección de barcode simultánea */}
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFillObject}
           facing="back"
-          flash="off"                // flash al tomar foto: siempre off (usamos torch)
-          enableTorch={torchOn}      // ← linterna real (ilumina mientras grabas)
+          flash="off"
+          enableTorch={torchOn}
+          onBarcodeScanned={barcodeScanning && !capturing ? handleBarcodeScanned : undefined}
+          barcodeScannerSettings={{
+            barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'],
+          }}
         />
 
         {/* ── Barra superior ── */}
@@ -220,11 +320,30 @@ export default function ScanScreen() {
             </Svg>
           </TouchableOpacity>
 
-          {/* Badge estado */}
-          <View style={[styles.modeBadge, torchOn && styles.modeBadgeFlash]}>
-            <View style={[styles.modeDot, { backgroundColor: torchOn ? '#FAC775' : '#24C8A0' }]} />
-            <Text style={[styles.modeBadgeText, torchOn && { color: '#FAC775' }]}>
-              {torchOn ? '⚡ Flash ON' : 'Cámara lista'}
+          {/* Badge estado — muestra si está buscando barcode, procesando o listo */}
+          <View style={[
+            styles.modeBadge,
+            torchOn && styles.modeBadgeFlash,
+            barcodeLoading && styles.modeBadgeLoading,
+          ]}>
+            {barcodeLoading
+              ? <ActivityIndicator size="small" color={Colors.warning} style={{ marginRight: 4 }} />
+              : <View style={[styles.modeDot, {
+                  backgroundColor: torchOn ? '#FAC775' : barcodeScanning ? '#24C8A0' : '#94A3B8'
+                }]} />
+            }
+            <Text style={[
+              styles.modeBadgeText,
+              torchOn && { color: '#FAC775' },
+              barcodeLoading && { color: Colors.warning },
+            ]}>
+              {barcodeLoading
+                ? 'Consultando...'
+                : torchOn
+                ? '⚡ Flash ON'
+                : barcodeScanning
+                ? '🔲 Detectando barcode'
+                : 'Pausado'}
             </Text>
           </View>
 
@@ -244,7 +363,7 @@ export default function ScanScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Marco de enfoque ── */}
+        {/* ── Marco de enfoque / área de detección ── */}
         <View style={styles.focusWrap} pointerEvents="none">
           <View style={[styles.focusBox, torchOn && styles.focusBoxFlash]}>
             {/* Esquinas */}
@@ -252,9 +371,23 @@ export default function ScanScreen() {
             <View style={[styles.corner, styles.cornerTR, torchOn && { borderColor: '#FAC775' }]} />
             <View style={[styles.corner, styles.cornerBL, torchOn && { borderColor: '#FAC775' }]} />
             <View style={[styles.corner, styles.cornerBR, torchOn && { borderColor: '#FAC775' }]} />
+            {/* Línea de escaneo de barcode */}
+            {barcodeScanning && !barcodeLoading && (
+              <View style={styles.scanLine} />
+            )}
+            {/* Overlay de carga de barcode */}
+            {barcodeLoading && (
+              <View style={styles.barcodeLoadingOverlay}>
+                <ActivityIndicator size="small" color={Colors.warning} />
+              </View>
+            )}
           </View>
           <Text style={[styles.focusHint, torchOn && { color: '#FAC775' }]}>
-            {torchOn ? 'Flash activado · apunta a la etiqueta' : 'Centra la etiqueta de ingredientes'}
+            {barcodeLoading
+              ? '⏳ Verificando producto...'
+              : torchOn
+              ? 'Flash activado · apunta a la etiqueta'
+              : ''}
           </Text>
         </View>
 
@@ -296,6 +429,97 @@ export default function ScanScreen() {
             <Text style={styles.sideActionLabel}>Manual</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ── Modal: Producto encontrado por barcode ── */}
+        <Modal
+          visible={foundProduct !== null}
+          animationType="slide"
+          transparent
+          onRequestClose={handleCloseProductModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalSheet}>
+              {/* Handle */}
+              <View style={styles.modalHandle} />
+
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <View style={[
+                    styles.sourceBadge,
+                    foundProduct?.from_cache ? styles.sourceBadgeCached : styles.sourceBadgeOFF,
+                  ]}>
+                    <Text style={[
+                      styles.sourceBadgeText,
+                      foundProduct?.from_cache ? { color: Colors.successDark } : { color: Colors.primaryDark },
+                    ]}>
+                      {foundProduct?.from_cache ? '✓ Base de datos local' : '🌍 Open Food Facts'}
+                    </Text>
+                  </View>
+                  <Text style={styles.modalProductName} numberOfLines={2}>
+                    {foundProduct?.name ?? 'Producto sin nombre'}
+                  </Text>
+                  {foundProduct?.brand ? (
+                    <Text style={styles.modalBrand}>{foundProduct.brand}</Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity style={styles.modalCloseBtn} onPress={handleCloseProductModal} activeOpacity={0.7}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path d="M18 6L6 18M6 6l12 12" stroke={Colors.textSecondary} strokeWidth={2} strokeLinecap="round" />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
+
+              {/* Código de barras */}
+              <View style={styles.barcodeRow}>
+                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                  <Line x1="4" y1="2" x2="4" y2="22" stroke={Colors.textTertiary} strokeWidth={2} strokeLinecap="round" />
+                  <Line x1="8" y1="2" x2="8" y2="22" stroke={Colors.textTertiary} strokeWidth={1} strokeLinecap="round" />
+                  <Line x1="12" y1="2" x2="12" y2="22" stroke={Colors.textTertiary} strokeWidth={2} strokeLinecap="round" />
+                  <Line x1="16" y1="2" x2="16" y2="22" stroke={Colors.textTertiary} strokeWidth={1} strokeLinecap="round" />
+                  <Line x1="20" y1="2" x2="20" y2="22" stroke={Colors.textTertiary} strokeWidth={2} strokeLinecap="round" />
+                </Svg>
+                <Text style={styles.barcodeValueText}>{foundProduct?.barcode ?? '—'}</Text>
+              </View>
+
+              {/* Alérgenos de OFF */}
+              {foundProduct?.allergens_tags && foundProduct.allergens_tags.length > 0 && (
+                <View style={styles.allergensSection}>
+                  <Text style={styles.sectionLabel}>⚠️ Alérgenos declarados</Text>
+                  <View style={styles.allergenTags}>
+                    {foundProduct.allergens_tags.map((tag) => (
+                      <View key={tag} style={styles.allergenTag}>
+                        <Text style={styles.allergenTagText}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Ingredientes */}
+              <ScrollView style={styles.ingredientsScroll} showsVerticalScrollIndicator={false}>
+                <Text style={styles.sectionLabel}>📋 Ingredientes</Text>
+                <Text style={styles.ingredientsText}>
+                  {foundProduct?.ingredients_text
+                    || (foundProduct?.ingredients_array?.length
+                      ? foundProduct.ingredients_array.join(', ')
+                      : 'Sin información de ingredientes disponible.')
+                  }
+                </Text>
+              </ScrollView>
+
+              {/* Acciones */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.analyzeAIBtn} onPress={handleAnalyzeWithAI} activeOpacity={0.85}>
+                  <Text style={styles.analyzeAIBtnText}>🧬 Analizar con IA →</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.scanAgainBtn} onPress={handleCloseProductModal} activeOpacity={0.8}>
+                  <Text style={styles.scanAgainBtnText}>Escanear otro producto</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -497,10 +721,15 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderWidth: 1,
     borderColor: 'rgba(36,200,160,0.4)',
+    maxWidth: width * 0.5,
   },
   modeBadgeFlash: {
     backgroundColor: 'rgba(250,199,117,0.18)',
     borderColor: 'rgba(250,199,117,0.45)',
+  },
+  modeBadgeLoading: {
+    backgroundColor: 'rgba(239,159,39,0.18)',
+    borderColor: 'rgba(239,159,39,0.45)',
   },
   modeDot: {
     width: 7,
@@ -512,9 +741,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#24C8A0',
     fontWeight: '700',
+    flexShrink: 1,
   },
 
-  // Marco de enfoque
+  // Marco de enfoque / área de detección híbrida
   focusWrap: {
     position: 'absolute',
     top: 0,
@@ -528,8 +758,26 @@ const styles = StyleSheet.create({
   focusBox: {
     width: width * 0.78,
     height: height * 0.35,
+    overflow: 'hidden',
   },
   focusBoxFlash: {},
+  // Línea de escaneo de barcode
+  scanLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '50%',
+    height: 2,
+    backgroundColor: 'rgba(36,200,160,0.65)',
+    borderRadius: 1,
+  },
+  // Overlay de carga mientras consulta la API de barcode
+  barcodeLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
   corner: {
     position: 'absolute',
     width: 28,
@@ -608,6 +856,153 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 3,
     borderColor: '#1A2340',
+  },
+
+  // ── Modal de producto encontrado ─────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: Colors.bgApp,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    maxHeight: '82%',
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: Colors.borderLight,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 12,
+  },
+  sourceBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginBottom: 2,
+  },
+  sourceBadgeCached: { backgroundColor: Colors.successSurface },
+  sourceBadgeOFF: { backgroundColor: Colors.primarySurface },
+  sourceBadgeText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  modalProductName: {
+    fontFamily: FontFamily.nunitoExtraBold,
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    lineHeight: 22,
+  },
+  modalBrand: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  barcodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.borderCard,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  barcodeValueText: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 12,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  allergensSection: { marginBottom: 10 },
+  sectionLabel: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
+  allergenTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  allergenTag: {
+    backgroundColor: Colors.dangerSurface,
+    borderWidth: 1,
+    borderColor: Colors.dangerBorder,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  allergenTagText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 11,
+    color: Colors.dangerMid,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  ingredientsScroll: { maxHeight: 160, marginBottom: 14 },
+  ingredientsText: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.borderCard,
+    borderRadius: 10,
+    padding: 12,
+  },
+  modalActions: { gap: 8 },
+  analyzeAIBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  analyzeAIBtnText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  scanAgainBtn: {
+    borderWidth: 1.5,
+    borderColor: Colors.borderInput,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  scanAgainBtnText: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
 
   // ── Modo manual ────────────────────────────────────────────────────────────

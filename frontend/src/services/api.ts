@@ -203,15 +203,33 @@ export interface AllergenCatalogResponse {
 
 // ─── Tipos de productos ───────────────────────────────────────────────────────
 
-/** Producto devuelto por GET /products/{barcode} */
+/** Producto devuelto por GET /products/{barcode} (resultado de búsqueda simple) */
 export interface ProductResponse {
   id: string;
   barcode: string | null;
   name: string | null;
   brand: string | null;
   ingredients_array: string[];
+  ingredients_text: string | null;
   verified_by_admin: boolean;
   country_origin: string;
+  image_url: string | null;
+}
+
+/**
+ * BarcodeProductResult — respuesta enriquecida del endpoint GET /products/{barcode}.
+ * Incluye from_cache para saber si vino de la BD o de Open Food Facts.
+ */
+export interface BarcodeProductResult {
+  id: string;
+  barcode: string | null;
+  name: string | null;
+  brand: string | null;
+  ingredients_text: string | null;
+  ingredients_array: string[];
+  allergens_tags: string[];   // ej. ["milk", "gluten"] — solo si viene de OFF
+  verified_by_admin: boolean;
+  from_cache: boolean;        // true = BD local, false = Open Food Facts
   image_url: string | null;
 }
 
@@ -359,11 +377,37 @@ export async function getAllergenCatalog(): Promise<AllergenCatalogResponse> {
 
 /**
  * GET /products/{barcode}
- * Busca un producto por código de barras.
+ * Búsqueda híbrida: BD local → Open Food Facts → 404.
+ * Si el producto no se encontró en ninguna fuente lanza error con status=404
+ * y actionRequired='SCAN_LABEL'.
  * Endpoint PÚBLICO — no requiere autenticación.
  */
-export async function getProductByBarcode(barcode: string): Promise<ProductResponse> {
-  return apiFetch<ProductResponse>(`/products/${encodeURIComponent(barcode)}`);
+export async function getProductByBarcode(barcode: string): Promise<BarcodeProductResult> {
+  return apiFetch<BarcodeProductResult>(`/products/${encodeURIComponent(barcode)}`);
+}
+
+/**
+ * Versión del lookup de barcode que devuelve null en vez de lanzar cuando
+ * el producto no existe (404/SCAN_LABEL), para que el caller pueda decidir
+ * mostrar un Alert o redirigir sin un try/catch extra.
+ *
+ * Returns:
+ *   BarcodeProductResult  → producto encontrado
+ *   null                  → producto no encontrado (debe redirigir a OCR)
+ */
+export async function scanProductByBarcode(
+  barcode: string
+): Promise<BarcodeProductResult | null> {
+  try {
+    return await getProductByBarcode(barcode);
+  } catch (err: any) {
+    // Producto no encontrado en ninguna fuente → redirigir a OCR
+    if (err?.status === 404 || err?.errorCode === 'PRODUCT_NOT_FOUND') {
+      return null;
+    }
+    // Cualquier otro error (red, servidor) → propagar
+    throw err;
+  }
 }
 
 // ─── Endpoints de Reportes ────────────────────────────────────────────────────

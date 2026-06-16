@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Platform,
+  Animated,
 } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
@@ -21,6 +22,73 @@ import {
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiScale } from '@/hooks/useUiScale';
+
+const TIPS = [
+  "Siempre escanea en espacios bien iluminados para obtener la mejor precisión OCR posible.",
+  "Los códigos de barras se detectan automáticamente. Usa el botón de foto para leer el texto nutricional y de ingredientes.",
+  "Si la aplicación detecta un alérgeno, revisa siempre dos veces el empaque del producto."
+];
+
+function TipCarousel() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      goToNext();
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [currentIndex]);
+
+  const goToNext = () => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => {
+      setCurrentIndex((prev) => (prev + 1) % TIPS.length);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    });
+  };
+
+  const goToPrev = () => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => {
+      setCurrentIndex((prev) => (prev - 1 + TIPS.length) % TIPS.length);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    });
+  };
+
+  return (
+    <View style={styles.tipCard}>
+      <View style={styles.tipIcon}>
+        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#085041" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <Circle cx="12" cy="12" r="9" />
+          <Path d="M12 8v4l3 3" />
+        </Svg>
+      </View>
+      <View style={styles.tipTextContainer}>
+        <Text style={styles.tipLabel}>Consejo del día</Text>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text style={styles.tipDesc}>
+            {TIPS[currentIndex]}
+          </Text>
+        </Animated.View>
+      </View>
+      <View style={styles.tipControls}>
+        <TouchableOpacity onPress={goToPrev} style={styles.tipControlBtn}>
+          <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#085041" strokeWidth="2" strokeLinecap="round">
+            <Path d="M15 18l-6-6 6-6" />
+          </Svg>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={goToNext} style={styles.tipControlBtn}>
+          <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#085041" strokeWidth="2" strokeLinecap="round">
+            <Path d="M9 18l6-6-6-6" />
+          </Svg>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 export default function HomeTab() {
   const router = useRouter();
@@ -333,20 +401,7 @@ export default function HomeTab() {
         </View>
 
         {/* Tip of the day Card */}
-        <View style={styles.tipCard}>
-          <View style={styles.tipIcon}>
-            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#085041" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <Circle cx="12" cy="12" r="9" />
-              <Path d="M12 8v4l3 3" />
-            </Svg>
-          </View>
-          <View style={styles.tipTextContainer}>
-            <Text style={styles.tipLabel}>Consejo del día</Text>
-            <Text style={styles.tipDesc}>
-              Siempre escanea en espacios bien iluminados para obtener la mejor precisión OCR posible.
-            </Text>
-          </View>
-        </View>
+        <TipCarousel />
       </ScrollView>
     </SafeAreaView>
   );
@@ -662,5 +717,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#0F6E56',
     lineHeight: 14,
+  },
+  tipControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'center',
+    marginLeft: 4,
+  },
+  tipControlBtn: {
+    padding: 6,
+    backgroundColor: 'rgba(8,80,65,0.06)',
+    borderRadius: 8,
   },
 });
