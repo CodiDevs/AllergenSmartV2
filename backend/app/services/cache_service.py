@@ -8,6 +8,7 @@ Servicio de caché OCR — sistema de 3 niveles.
 Mientras Vision esté mockeado, L3 devuelve texto simulado (ver vision_client.py).
 """
 from dataclasses import dataclass, field
+import base64
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.vision_client import vision_client
 from app.repositories.cache_repo import CacheRepository
 from app.repositories.product_repo import ProductRepository
+from app.schemas.common import ScanSource
 from app.services import text_normalizer
 
 
@@ -40,11 +42,36 @@ class CacheService:
         self.products = ProductRepository(session)
         self.cache = CacheRepository(session)
 
-    async def resolve(self, image_base64: str, barcode: Optional[str]) -> OCRResult:
+    async def resolve(
+        self,
+        image_base64: str,
+        barcode: Optional[str],
+        scan_source: ScanSource = ScanSource.CAMERA,
+    ) -> OCRResult:
         """
         Devuelve ingredientes/advertencias del producto, usando el nivel de
         caché más barato disponible. Solo cachea (L2) si hay barcode.
         """
+        # --- L0: modo manual — el base64 ya es texto de ingredientes, no imagen ---
+        if scan_source == ScanSource.MANUAL:
+            try:
+                # Quitar prefijo data URI si viene con él
+                raw = image_base64
+                if raw.startswith("data:"):
+                    _, _, raw = raw.partition(",")
+                text = base64.b64decode(raw + "==").decode("utf-8", errors="replace").strip()
+            except Exception:
+                text = ""
+            ingredients = text_normalizer.extract_ingredients(text) if text else [text]
+            warnings = text_normalizer.extract_warnings(text)
+            return OCRResult(
+                text=text,
+                ingredients=ingredients if ingredients else [text],
+                warnings=warnings,
+                confidence=1.0,
+                from_cache=False,
+                cache_level="L0",
+            )
         # --- L1: producto verificado por admin ---
         if barcode:
             product = await self.products.get_verified_by_barcode(barcode)

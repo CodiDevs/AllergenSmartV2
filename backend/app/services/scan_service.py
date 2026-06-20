@@ -60,8 +60,8 @@ class ScanService:
             if ua.allergen is not None
         ]
 
-        # 2. Resolver ingredientes (caché 3 niveles)
-        ocr = await self.cache.resolve(request.image_base64, request.barcode)
+        # 2. Resolver ingredientes (caché 3 niveles — o L0 si es modo manual)
+        ocr = await self.cache.resolve(request.image_base64, request.barcode, request.scan_source)
 
         # 3. Detectar alérgenos
         detected = detect_allergens(profiles, ocr.ingredients, ocr.warnings)
