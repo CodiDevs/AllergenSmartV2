@@ -2,8 +2,9 @@
  * AlergiMascot — SVG mascot component with 4 emotional states
  * Faithfully replicated from smartallergen_alergi_system.html
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import Svg, { Path, Circle, Ellipse, Line, Text as SvgText } from 'react-native-svg';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 
 export type MascotState = 'blue' | 'green' | 'red' | 'amber';
 
@@ -43,9 +44,25 @@ export function AlergiMascot({ state, size = 80 }: AlergiMascotProps) {
   const c = MASCOT_COLORS[state];
   const scale = size / 80;
 
+  // Floating animation setup
+  const floatValue = useSharedValue(0);
+
+  useEffect(() => {
+    floatValue.value = withRepeat(
+      withTiming(-5, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+      -1, // infinite
+      true // reverse
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: floatValue.value }],
+  }));
+
   return (
-    <Svg width={size} height={size * 1.1} viewBox="0 0 80 88">
-      {/* Body */}
+    <Animated.View style={animatedStyle}>
+      <Svg width={size} height={size * 1.1} viewBox="0 0 80 88">
+        {/* Body */}
       <Path
         d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z"
         fill={c.body}
@@ -156,5 +173,6 @@ export function AlergiMascot({ state, size = 80 }: AlergiMascotProps) {
         </>
       )}
     </Svg>
+    </Animated.View>
   );
 }
