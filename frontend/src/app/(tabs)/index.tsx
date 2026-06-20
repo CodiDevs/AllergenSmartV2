@@ -8,6 +8,16 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  interpolate,
+  Easing,
+} from 'react-native-reanimated';
 import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle, Rect, Ellipse } from 'react-native-svg';
@@ -117,6 +127,39 @@ export default function HomeTab() {
   // Historial reciente (primeros 3 items)
   const recentHistory = history.slice(0, 3);
 
+  // ── Drop background animation ──────────────────────────────────────────────
+  // A single 0→100 progress value drives 4 phases via interpolation:
+  //   0 →  55 : caída  (translateY 0 → 22)
+  //  55 →  68 : aplaste  (scaleX 1→1.4, scaleY 1→0.5)
+  //  68 →  82 : reforma (scales back to 1)
+  //  82 → 100 : sube  (translateY 22 → 0)
+  const dropProgress = useSharedValue(0);
+
+  useEffect(() => {
+    dropProgress.value = withRepeat(
+      withSequence(
+        // Cae lentamente con aceleración de gravedad (5s)
+        withTiming(100, { duration: 5000, easing: Easing.in(Easing.quad) }),
+        // Pausa breve antes de reiniciar (para que no sea abrupto)
+        withDelay(200, withTiming(0, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const dropStyle = useAnimatedStyle(() => {
+    const p = dropProgress.value;
+    // La gota baja hasta salir completamente del card (150px)
+    const translateY = interpolate(p, [0, 100], [0, 150]);
+    // Fade in rápido al inicio → visible durante la caída → fade out antes de salir
+    const opacity = interpolate(p, [0, 4, 80, 100], [0, 0.1, 0.1, 0]);
+    return {
+      transform: [{ translateY }],
+      opacity,
+    };
+  });
+
   // Allergen icons mapping
   const getAllergenIcon = (id: string, color: string) => {
     switch (id) {
@@ -219,12 +262,12 @@ export default function HomeTab() {
 
         {/* Hero Card */}
         <View style={styles.heroCard}>
-          {/* Background Mascot Silhouette */}
-          <View style={styles.heroCardBg}>
-            <Svg width="100" height="100" viewBox="0 0 80 88" opacity={0.08}>
+          {/* Background Drop — animated with fall+splat+reform cycle */}
+          <Reanimated.View style={[styles.heroCardBg, dropStyle]}>
+            <Svg width="100" height="100" viewBox="0 0 80 88">
               <Path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="#FFFFFF" />
             </Svg>
-          </View>
+          </Reanimated.View>
 
           <View style={styles.heroText}>
             <Text style={styles.heroEyebrow}>SmartAllergen · listo para escanear</Text>
