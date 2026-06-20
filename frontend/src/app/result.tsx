@@ -39,6 +39,9 @@ export default function ResultScreen() {
   const allergensDetailed: AllergenMatch[] = (scan as any).allergensDetailed ?? [];
   // Advertencias de trazas del backend
   const warnings: string[] = (scan as any).warnings ?? [];
+  // Campos que pueden faltar si el scan viene del historial
+  const allergens: string[] = (scan as any).allergens ?? [];
+  const rawIngredients: string = (scan as any).rawIngredients ?? '';
 
   const themeColors = isDanger
     ? {
@@ -50,7 +53,7 @@ export default function ResultScreen() {
         heroBg: '#FEECEC',
         mascotState: 'red' as const,
         badgeLabel: 'PELIGRO · NO CONSUMIR',
-        subtitleText: `Marca: ${scan.brand || 'Desconocida'} · ${scan.allergens.length} alérgeno${scan.allergens.length !== 1 ? 's' : ''} detectado${scan.allergens.length !== 1 ? 's' : ''}`,
+        subtitleText: `Marca: ${scan.brand || 'Desconocida'} · ${allergens.length} alérgeno${allergens.length !== 1 ? 's' : ''} detectado${allergens.length !== 1 ? 's' : ''}`,
         btnBg: Colors.danger,
         btnText: '#FFFFFF',
       }
@@ -64,7 +67,7 @@ export default function ResultScreen() {
         heroBg: '#FFF5DC',
         mascotState: 'amber' as const,
         badgeLabel: 'PRECAUCIÓN · REVISAR',
-        subtitleText: `Marca: ${scan.brand || 'Desconocida'} · ${scan.allergens.length} posible${scan.allergens.length !== 1 ? 's' : ''} alérgeno${scan.allergens.length !== 1 ? 's' : ''}`,
+        subtitleText: `Marca: ${scan.brand || 'Desconocida'} · ${allergens.length} posible${allergens.length !== 1 ? 's' : ''} alérgeno${allergens.length !== 1 ? 's' : ''}`,
         btnBg: Colors.warning,
         btnText: '#FFFFFF',
       }
@@ -117,7 +120,7 @@ export default function ResultScreen() {
         date: 'Hoy',
         status: 'safe',
         allergens: [],
-        rawIngredients: scan.rawIngredients,
+        rawIngredients: rawIngredients,
       });
 
       alert('¡Producto agregado a tus favoritos!');
@@ -131,12 +134,12 @@ export default function ResultScreen() {
       addHistoryItem({
         name: scan.name,
         brand: scan.brand,
-        detail: `${scan.allergens.join(', ')} · ahora`,
+        detail: `${allergens.join(', ')} · ahora`,
         time: 'ahora',
         date: 'Hoy',
         status: 'danger',
-        allergens: scan.allergens,
-        rawIngredients: scan.rawIngredients,
+        allergens: allergens,
+        rawIngredients: rawIngredients,
       });
       alert('Guardado en el historial de alertas');
       router.replace('/(tabs)/history');
@@ -234,7 +237,7 @@ export default function ResultScreen() {
           <Text style={styles.ocrFoundLabel}>Detectado por OCR en ingredientes</Text>
           {isDanger
             ? highlightOcrText(scan.rawIngredients, ['gluten', 'trigo', 'leche', 'entera'])
-            : <Text style={styles.ocrFoundTxt}>{scan.rawIngredients}</Text>}
+            : <Text style={styles.ocrFoundTxt}>{rawIngredients}</Text>}
         </View>
 
         {/* Details list */}
@@ -271,7 +274,7 @@ export default function ResultScreen() {
                 ))
               ) : (
                 // Fallback: mostrar nombres simples si no hay detalle
-                scan.allergens.map((name, idx) => (
+                allergens.map((name, idx) => (
                   <View key={idx} style={styles.allergenRow}>
                     <View style={[styles.alDot, { backgroundColor: Colors.danger }]} />
                     <View style={{ flex: 1 }}>
@@ -322,7 +325,7 @@ export default function ResultScreen() {
                 </View>
               ))}
 
-              {scan.rawIngredients.length > 0 && (
+              {rawIngredients.length > 0 && (
                 <View style={[styles.allergenRow, styles.allergenRowSafe]}>
                   <View style={[styles.alDot, { backgroundColor: Colors.success }]} />
                   <View style={{ flex: 1 }}>

@@ -3,9 +3,10 @@
  * Animations:
  *   1. Floating (translateY loop)
  *   2. Blinking (ry of eye-white ellipses drops to 0 and back up)
+ *   3. Waving arm (green state — G group rotation around the shoulder pivot)
  */
 import React, { useEffect } from 'react';
-import Svg, { Path, Circle, Ellipse, Line } from 'react-native-svg';
+import Svg, { Path, Circle, Ellipse, Line, G } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,6 +20,7 @@ import Animated, {
 
 // ── Animated SVG primitives ───────────────────────────────────────────────────
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
+const AnimatedG       = Animated.createAnimatedComponent(G);
 
 // ── Color palette per state ───────────────────────────────────────────────────
 export type MascotState = 'blue' | 'green' | 'red' | 'amber';
@@ -48,19 +50,23 @@ export function AlergiMascot({ state, size = 80 }: AlergiMascotProps) {
   // ── 1. Floating animation ──────────────────────────────────────────────────
   const floatY = useSharedValue(0);
 
-  // ── 2. Blink animation — shared value drives the eye-white vertical radius ─
+  // ── 2. Blink animation ────────────────────────────────────────────────────
   const eyeRy = useSharedValue(openRy);
 
+  // ── 3. Wave animation (green state only) ──────────────────────────────────
+  // Rotates around the shoulder pivot (66, 46) where the arm meets the body.
+  // Sequence: 3 quick waves → pause 2s → repeat.
+  const waveRot = useSharedValue(0);
+
   useEffect(() => {
-    // Floating: loop up/down forever
+    // 1. Float: gentle up/down forever
     floatY.value = withRepeat(
       withTiming(-5, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
       -1,
       true
     );
 
-    // Blinking: wait 2.8s → close in 80ms → stay closed 60ms → open in 80ms → repeat
-    // Using a second withRepeat so it fires independently of the float loop.
+    // 2. Blink: wait → shut → open → repeat
     eyeRy.value = withRepeat(
       withSequence(
         withDelay(2800, withTiming(0.3, { duration: 80, easing: Easing.out(Easing.quad) })),
@@ -69,16 +75,40 @@ export function AlergiMascot({ state, size = 80 }: AlergiMascotProps) {
       -1,
       false
     );
-  }, [openRy]);
 
-  // ── Animated styles & props ───────────────────────────────────────────────
+    // 3. Wave arm (only meaningful when state=green, but always set)
+    //    Wrist sweeps: -30° → +12° → -28° → +12° → -25° → rest(0°) → 2s pause
+    if (state === 'green') {
+      waveRot.value = withRepeat(
+        withSequence(
+          withTiming(-30, { duration: 200, easing: Easing.inOut(Easing.sin) }),
+          withTiming( 12, { duration: 200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(-28, { duration: 200, easing: Easing.inOut(Easing.sin) }),
+          withTiming( 12, { duration: 200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(-25, { duration: 200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(  0, { duration: 300, easing: Easing.out(Easing.quad) }),
+          withDelay(2000, withTiming(0, { duration: 0 })) // pause at rest
+        ),
+        -1,
+        false
+      );
+    }
+  }, [openRy, state]);
+
+  // ── Animated styles & props ────────────────────────────────────────────────
   const floatStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: floatY.value }],
   }));
 
-  // Props for the left and right eye-white ellipses
   const leftEyeProps  = useAnimatedProps(() => ({ ry: eyeRy.value }));
   const rightEyeProps = useAnimatedProps(() => ({ ry: eyeRy.value }));
+
+  // Arm group rotates around shoulder pivot (66, 46)
+  const armProps = useAnimatedProps(() => ({
+    rotation: waveRot.value,
+    originX: 66,
+    originY: 46,
+  }));
 
   // ── Eye Y positions per state ─────────────────────────────────────────────
   const eyeCy = state === 'green' ? 49 : 50;
@@ -104,24 +134,19 @@ export function AlergiMascot({ state, size = 80 }: AlergiMascotProps) {
         {/* ── BLUE state — happy ───────────────────────────────────────── */}
         {state === 'blue' && (
           <>
-            {/* Eye whites (animated for blink) */}
             <AnimatedEllipse cx={33} cy={eyeCy} rx={5} animatedProps={leftEyeProps}  fill="white" />
             <AnimatedEllipse cx={47} cy={eyeCy} rx={5} animatedProps={rightEyeProps} fill="white" />
-            {/* Pupils */}
             <Circle cx={34.5} cy={51} r={2.5} fill={c.eye} />
             <Circle cx={48.5} cy={51} r={2.5} fill={c.eye} />
-            {/* Pupil shine */}
-            <Circle cx={35.5} cy={50} r={1} fill="white" />
-            <Circle cx={49.5} cy={50} r={1} fill="white" />
-            {/* Happy smile */}
+            <Circle cx={35.5} cy={50} r={1}   fill="white" />
+            <Circle cx={49.5} cy={50} r={1}   fill="white" />
             <Path d="M34 57 Q40 63 46 57" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" />
-            {/* Cheeks */}
             <Ellipse cx={29} cy={57} rx={3.5} ry={2} fill={c.cheek!} opacity={0.5} />
             <Ellipse cx={51} cy={57} rx={3.5} ry={2} fill={c.cheek!} opacity={0.5} />
           </>
         )}
 
-        {/* ── GREEN state — very happy ─────────────────────────────────── */}
+        {/* ── GREEN state — very happy, waving arm ─────────────────────── */}
         {state === 'green' && (
           <>
             <AnimatedEllipse cx={33} cy={eyeCy} rx={5} animatedProps={leftEyeProps}  fill="white" />
@@ -135,26 +160,31 @@ export function AlergiMascot({ state, size = 80 }: AlergiMascotProps) {
             {/* Cheeks */}
             <Ellipse cx={28} cy={57} rx={3.5} ry={2.2} fill={c.cheek!} opacity={0.55} />
             <Ellipse cx={52} cy={57} rx={3.5} ry={2.2} fill={c.cheek!} opacity={0.55} />
-            {/* Waving arm */}
-            <Path d="M66 46 C72 42 75 37 72 33 C69 30 65 33 63 38" fill={c.body} stroke="#1D9E75" strokeWidth={1} />
-            <Ellipse cx={71} cy={33} rx={4.5} ry={4.5} fill={c.body} stroke="#1D9E75" strokeWidth={1} />
+
+            {/* ── Waving arm (animated rotation around shoulder) ── */}
+            <AnimatedG animatedProps={armProps}>
+              <Path
+                d="M66 46 C72 42 75 37 72 33 C69 30 65 33 63 38"
+                fill={c.body}
+                stroke="#1D9E75"
+                strokeWidth={1}
+              />
+              {/* Hand (fist/circle at the wrist) */}
+              <Ellipse cx={71} cy={33} rx={4.5} ry={4.5} fill={c.body} stroke="#1D9E75" strokeWidth={1} />
+            </AnimatedG>
           </>
         )}
 
         {/* ── RED state — worried / danger ─────────────────────────────── */}
         {state === 'red' && (
           <>
-            {/* Worried eyebrows */}
             <Line x1={29} y1={44} x2={37} y2={46} stroke="white" strokeWidth={1.8} strokeLinecap="round" />
             <Line x1={43} y1={46} x2={51} y2={44} stroke="white" strokeWidth={1.8} strokeLinecap="round" />
-            {/* Eye whites (animated) */}
             <AnimatedEllipse cx={33} cy={eyeCy} rx={5} animatedProps={leftEyeProps}  fill="white" />
             <AnimatedEllipse cx={47} cy={eyeCy} rx={5} animatedProps={rightEyeProps} fill="white" />
             <Circle cx={33} cy={51} r={2.5} fill={c.eye} />
             <Circle cx={47} cy={51} r={2.5} fill={c.eye} />
-            {/* Sad mouth */}
             <Path d="M34 60 Q40 55 46 60" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" />
-            {/* Sweat drop */}
             <Path d="M58 28 C58 28 56 32 59 34 C62 32 60 28 58 28Z" fill={c.highlight} opacity={0.7} />
           </>
         )}
@@ -162,14 +192,12 @@ export function AlergiMascot({ state, size = 80 }: AlergiMascotProps) {
         {/* ── AMBER state — surprised / caution ───────────────────────── */}
         {state === 'amber' && (
           <>
-            {/* Wide surprised eyes (bigger radius) */}
             <AnimatedEllipse cx={33} cy={eyeCy} rx={6} animatedProps={leftEyeProps}  fill="white" />
             <AnimatedEllipse cx={47} cy={eyeCy} rx={6} animatedProps={rightEyeProps} fill="white" />
             <Circle cx={33} cy={50} r={3}   fill={c.eye} />
             <Circle cx={47} cy={50} r={3}   fill={c.eye} />
             <Circle cx={34} cy={49} r={1.2} fill="white" />
             <Circle cx={48} cy={49} r={1.2} fill="white" />
-            {/* Surprised "O" mouth */}
             <Ellipse cx={40} cy={60} rx={4} ry={3} fill="white" opacity={0.9} />
           </>
         )}
