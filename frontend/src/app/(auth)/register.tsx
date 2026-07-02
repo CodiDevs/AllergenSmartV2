@@ -37,13 +37,27 @@ export default function RegisterScreen() {
 
   const hasError = error.length > 0;
 
+  // ── Password strength validation ──────────────────────────────────────────
+  const pwChecks = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+  };
+  const passedCount = Object.values(pwChecks).filter(Boolean).length;
+  const strengthLevel = passedCount <= 1 ? 'weak' : passedCount <= 3 ? 'fair' : passedCount <= 4 ? 'good' : 'strong';
+  const strengthColor = strengthLevel === 'weak' ? '#E24B4A' : strengthLevel === 'fair' ? '#F59E0B' : strengthLevel === 'good' ? '#3B82F6' : '#1D9E75';
+  const strengthLabel = strengthLevel === 'weak' ? 'Débil' : strengthLevel === 'fair' ? 'Regular' : strengthLevel === 'good' ? 'Buena' : 'Fuerte';
+  const allPassed = passedCount === 5;
+
   const handleRegister = async () => {
     if (!name || !email || !password) {
       setError('Completa todos los campos');
       return;
     }
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (!allPassed) {
+      setError('Tu contraseña no cumple todos los requisitos de seguridad');
       return;
     }
 
@@ -74,6 +88,17 @@ export default function RegisterScreen() {
       setLoading(false);
     }
   };
+
+  /** Small check/x icon for password requirements */
+  const CheckIcon = ({ passed }: { passed: boolean }) => (
+    <Svg width={12} height={12} viewBox="0 0 16 16" fill="none">
+      {passed ? (
+        <Path d="M3 8.5l3 3 7-7" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <Circle cx="8" cy="8" r="5" stroke="#CBD5E1" strokeWidth="1.5" />
+      )}
+    </Svg>
+  );
 
   if (registered) {
     return (
@@ -272,13 +297,68 @@ export default function RegisterScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Password Strength Indicator */}
+          {password.length > 0 && (
+            <View style={styles.strengthContainer}>
+              {/* Strength Bars */}
+              <View style={styles.strengthBars}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.strengthBar,
+                      { backgroundColor: i <= passedCount ? strengthColor : '#E8ECF4' },
+                    ]}
+                  />
+                ))}
+                <Text style={[styles.strengthLabel, { color: strengthColor }]}>
+                  {strengthLabel}
+                </Text>
+              </View>
+
+              {/* Requirements Checklist */}
+              <View style={styles.reqList}>
+                <View style={styles.reqItem}>
+                  <CheckIcon passed={pwChecks.length} />
+                  <Text style={[styles.reqText, pwChecks.length && styles.reqTextPassed]}>
+                    Mínimo 8 caracteres
+                  </Text>
+                </View>
+                <View style={styles.reqItem}>
+                  <CheckIcon passed={pwChecks.upper} />
+                  <Text style={[styles.reqText, pwChecks.upper && styles.reqTextPassed]}>
+                    Una letra mayúscula (A-Z)
+                  </Text>
+                </View>
+                <View style={styles.reqItem}>
+                  <CheckIcon passed={pwChecks.lower} />
+                  <Text style={[styles.reqText, pwChecks.lower && styles.reqTextPassed]}>
+                    Una letra minúscula (a-z)
+                  </Text>
+                </View>
+                <View style={styles.reqItem}>
+                  <CheckIcon passed={pwChecks.number} />
+                  <Text style={[styles.reqText, pwChecks.number && styles.reqTextPassed]}>
+                    Un número (0-9)
+                  </Text>
+                </View>
+                <View style={styles.reqItem}>
+                  <CheckIcon passed={pwChecks.special} />
+                  <Text style={[styles.reqText, pwChecks.special && styles.reqTextPassed]}>
+                    Un carácter especial (!@#$...)
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {/* Continue Button */}
           <AppButton
             title="Registrar cuenta"
             variant="green"
             onPress={handleRegister}
             loading={loading}
-            style={styles.continueButton}
+            style={[styles.continueButton, !allPassed && password.length > 0 && { opacity: 0.5 }]}
           />
 
           {/* Footer */}
@@ -422,6 +502,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textPrimary,
     padding: 0,
+  },
+  // ── Password Strength Styles ──
+  strengthContainer: {
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  strengthBars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 10,
+  },
+  strengthBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+  },
+  strengthLabel: {
+    fontFamily: FontFamily.nunitoBold,
+    fontWeight: '700',
+    fontSize: 11,
+    marginLeft: 8,
+  },
+  reqList: {
+    gap: 4,
+  },
+  reqItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reqText: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  reqTextPassed: {
+    color: '#1D9E75',
   },
   continueButton: {
     marginTop: 4,
