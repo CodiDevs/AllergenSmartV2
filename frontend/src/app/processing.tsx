@@ -20,10 +20,12 @@ import {
   mapSeverityToStore,
   type ScanResponse,
 } from '@/services/api';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 export default function ProcessingScreen() {
   const router = useRouter();
-  const { pendingScan, setActiveScan, addHistoryItem, setPendingScan } = useAppStore();
+  const { pendingScan, setActiveScan, addHistoryItem, setPendingScan, history } = useAppStore();
+  const { generateScanAlert, generateMilestone, generateSafetyTip } = useNotificationStore();
   const [progress, setProgress] = useState(0.2);
   const [step, setStep] = useState(1); // 1: Image, 2: OCR, 3: Analysis, 4: Match
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -106,6 +108,18 @@ export default function ProcessingScreen() {
         allergens: allergenNames,
         rawIngredients: response.detected_text || '',
       });
+
+      // ─── Generar notificaciones inteligentes ────────────────────────────────
+      if (status === 'danger' || status === 'warning') {
+        generateScanAlert(productName, status, allergenNames);
+      }
+      // Milestone: se basa en la cantidad de escaneos + 1 (el actual)
+      const newScanCount = history.length + 1;
+      generateMilestone(newScanCount);
+      // Tip aleatorio cada 3 escaneos
+      if (newScanCount % 3 === 0) {
+        generateSafetyTip();
+      }
 
       // ─── Limpiar pendingScan ────────────────────────────────────────────────
       setPendingScan(null);

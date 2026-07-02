@@ -20,6 +20,7 @@ import {
 } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
@@ -73,6 +74,14 @@ export default function RootLayout() {
     } else if (session && inAuthGroup) {
       // Redirect to main tabs if session exists
       router.replace('/(tabs)');
+
+      // Generar notificación de bienvenida la primera vez
+      const { notifications, generateWelcomeNotification } = useNotificationStore.getState();
+      const hasWelcome = notifications.some((n) => n.type === 'welcome');
+      if (!hasWelcome) {
+        const name = session.user?.user_metadata?.full_name || 'usuario';
+        generateWelcomeNotification(name);
+      }
     }
   }, [session, loading, segments, fontsLoaded]);
 
@@ -95,6 +104,7 @@ export default function RootLayout() {
         <Stack.Screen name="result" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="processing" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="warning" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false, animation: 'slide_from_right' }} />
       </Stack>
     </>
   );

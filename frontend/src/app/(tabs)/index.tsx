@@ -31,6 +31,7 @@ import {
 } from '@/store/appStore';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { useUiScale } from '@/hooks/useUiScale';
 
 const TIPS = [
@@ -105,6 +106,7 @@ export default function HomeTab() {
   const scale = useUiScale();
   const { allergens, history } = useAppStore();
   const { user } = useAuthStore();
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   // Nombre real desde Supabase Auth
   const displayName = user?.user_metadata?.full_name || 'Bienvenido';
@@ -242,12 +244,13 @@ export default function HomeTab() {
               style={styles.iconBtn}
               activeOpacity={0.8}
               accessibilityLabel="Notificaciones"
+              onPress={() => router.push('/notifications')}
             >
               <Svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <Path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <Path d="M13.73 21a2 2 0 01-3.46 0" />
               </Svg>
-              <View style={styles.notifDot} />
+              {unreadCount > 0 && <View style={styles.notifDot} />}
             </TouchableOpacity>
 
             <TouchableOpacity
