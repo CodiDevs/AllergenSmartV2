@@ -106,62 +106,144 @@ async def verify_success():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Cuenta Verificada - AllergenSmart</title>
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
         <style>
+            * { box-sizing: border-box; }
             body {
-                font-family: 'Inter', -apple-system, sans-serif;
-                background-color: #E6F4FE;
+                font-family: 'Inter', sans-serif;
+                margin: 0;
+                min-height: 100vh;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                height: 100vh;
-                margin: 0;
+                /* Degradado moderno estilo AllergenSmart */
+                background: linear-gradient(135deg, #E6F4FE 0%, #BFE0F9 100%);
                 color: #0E3E5B;
-                text-align: center;
                 padding: 20px;
+                overflow: hidden;
             }
+            /* Decoraciones de fondo flotantes */
+            .blob1, .blob2 {
+                position: absolute;
+                border-radius: 50%;
+                filter: blur(60px);
+                z-index: 0;
+            }
+            .blob1 { width: 300px; height: 300px; background: rgba(29, 158, 117, 0.2); top: -100px; left: -100px; animation: float 6s ease-in-out infinite; }
+            .blob2 { width: 400px; height: 400px; background: rgba(59, 130, 246, 0.15); bottom: -150px; right: -100px; animation: float 8s ease-in-out infinite reverse; }
+            
+            @keyframes float {
+                0% { transform: translateY(0px) scale(1); }
+                50% { transform: translateY(20px) scale(1.05); }
+                100% { transform: translateY(0px) scale(1); }
+            }
+            
+            /* Tarjeta Glassmorphism */
             .card {
-                background: white;
-                padding: 40px 30px;
-                border-radius: 20px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-                max-width: 400px;
+                background: rgba(255, 255, 255, 0.85);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                padding: 50px 40px;
+                border-radius: 30px;
+                box-shadow: 0 20px 40px rgba(14, 62, 91, 0.08);
+                max-width: 420px;
                 width: 100%;
+                text-align: center;
+                z-index: 1;
+                transform: translateY(20px);
+                opacity: 0;
+                animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
-            .icon {
-                width: 80px;
-                height: 80px;
-                background: #E8F5E9;
-                color: #2E7D32;
+            
+            @keyframes slideUp {
+                to { transform: translateY(0); opacity: 1; }
+            }
+            
+            /* Icono SVG animado */
+            .icon-container {
+                width: 90px;
+                height: 90px;
+                background: linear-gradient(135deg, #1D9E75 0%, #147A5A 100%);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 40px;
-                margin: 0 auto 20px;
+                margin: 0 auto 24px;
+                box-shadow: 0 10px 20px rgba(29, 158, 117, 0.3);
+                transform: scale(0);
+                animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s forwards;
             }
-            h1 { font-size: 24px; margin-bottom: 10px; }
-            p { font-size: 16px; color: #517185; line-height: 1.5; margin-bottom: 30px; }
-            a {
+            
+            @keyframes popIn {
+                to { transform: scale(1); }
+            }
+            
+            h1 { 
+                font-family: 'Nunito', sans-serif;
+                font-size: 28px; 
+                font-weight: 800;
+                margin: 0 0 12px; 
+                color: #0E3E5B;
+            }
+            
+            p { 
+                font-size: 16px; 
+                color: #517185; 
+                line-height: 1.6; 
+                margin: 0 0 32px; 
+            }
+            
+            strong { color: #1D9E75; }
+            
+            /* Botón moderno */
+            .btn {
                 display: inline-block;
-                background-color: #3B82F6;
+                background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
                 color: white;
                 text-decoration: none;
-                padding: 14px 24px;
-                border-radius: 12px;
-                font-weight: bold;
-                font-size: 16px;
-                transition: background 0.3s;
+                padding: 16px 32px;
+                border-radius: 16px;
+                font-family: 'Nunito', sans-serif;
+                font-weight: 800;
+                font-size: 18px;
+                box-shadow: 0 8px 16px rgba(59, 130, 246, 0.25);
+                transition: all 0.3s ease;
+                width: 100%;
             }
-            a:hover { background-color: #2563EB; }
+            
+            .btn:hover { 
+                transform: translateY(-2px);
+                box-shadow: 0 12px 20px rgba(59, 130, 246, 0.35);
+            }
+            
+            .footer-text {
+                margin-top: 24px;
+                font-size: 13px;
+                color: #88A1B1;
+                margin-bottom: 0;
+            }
         </style>
     </head>
     <body>
+        <div class="blob1"></div>
+        <div class="blob2"></div>
+        
         <div class="card">
-            <div class="icon">✓</div>
-            <h1>¡Cuenta verificada!</h1>
-            <p>El correo de <strong>AllergenSmart</strong> ha sido confirmado con éxito. Ya puedes cerrar esta ventana y regresar a la aplicación para iniciar sesión.</p>
-            <a href="allergensmart://">Abrir AllergenSmart</a>
+            <div class="icon-container">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            
+            <h1>¡Verificación Exitosa!</h1>
+            
+            <p>Bienvenido/a a <strong>AllergenSmart</strong>.<br>Tu dirección de correo ha sido confirmada correctamente y tu cuenta ya está activa.</p>
+            
+            <a href="allergensmart://" class="btn">Abrir Aplicación</a>
+            
+            <p class="footer-text">Si abriste este enlace desde tu computadora, ya puedes cerrar esta ventana y regresar a tu celular.</p>
         </div>
     </body>
     </html>
