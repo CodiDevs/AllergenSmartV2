@@ -14,31 +14,9 @@ import Constants from 'expo-constants';
 // ─── Configuración ────────────────────────────────────────────────────────────
 
 /**
- * BASE_URL — detecta automáticamente la IP del servidor de desarrollo.
- *
- * En dispositivos reales (iPhone/Android físico), `localhost` no apunta
- * al ordenador del desarrollador, sino al propio dispositivo.
- * expo-constants expone `hostUri` que contiene la IP real de la máquina
- * donde corre el servidor Metro. Usamos esa IP también para el backend.
- *
- * Ejemplo: si Metro corre en 192.168.1.42:8081, el backend será 192.168.1.42:8000.
+ * BASE_URL — Apunta al servidor de producción en Render.
  */
-function getBaseUrl(): string {
-  if (__DEV__) {
-    // hostUri tiene formato "192.168.x.x:8081" en Expo Go sobre dispositivo real
-    const hostUri = Constants.expoConfig?.hostUri ?? Constants.manifest?.debuggerHost;
-    if (hostUri) {
-      const host = hostUri.split(':')[0]; // solo la IP, sin el puerto de Metro
-      if (host && host !== 'localhost' && host !== '127.0.0.1') {
-        return `http://${host}:8000/api/v1`;
-      }
-    }
-  }
-  // Fallback: simulador iOS/Android o producción
-  return 'http://localhost:8000/api/v1';
-}
-
-const BASE_URL = getBaseUrl();
+const BASE_URL = 'https://allergensmart-backend.onrender.com/api/v1';
 
 // ─── Enums (deben coincidir con app/schemas/common.py) ───────────────────────
 

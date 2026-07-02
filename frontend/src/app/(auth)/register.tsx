@@ -21,6 +21,7 @@ import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { AppButton } from '@/components/ui/AppButton';
 import { supabase } from '@/services/supabase';
 import { AppText } from '@/components/ui/AppText';
+import * as Linking from 'expo-linking';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -50,10 +51,12 @@ export default function RegisterScreen() {
     setError('');
 
     try {
+      const redirectUrl = Linking.createURL('/');
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: name,
           },

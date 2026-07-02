@@ -91,3 +91,79 @@ async def login(request: Request, user: UserLogin):
                 "action_required": "RETRY",
             },
         )
+
+@router.get("/verify-success")
+async def verify_success():
+    """
+    Página web simple que se muestra cuando la redirección profunda (Deep Link) 
+    de Supabase falla en el celular, o cuando un usuario verifica desde su PC.
+    """
+    from fastapi.responses import HTMLResponse
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cuenta Verificada - AllergenSmart</title>
+        <style>
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                background-color: #E6F4FE;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                color: #0E3E5B;
+                text-align: center;
+                padding: 20px;
+            }
+            .card {
+                background: white;
+                padding: 40px 30px;
+                border-radius: 20px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+                max-width: 400px;
+                width: 100%;
+            }
+            .icon {
+                width: 80px;
+                height: 80px;
+                background: #E8F5E9;
+                color: #2E7D32;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 40px;
+                margin: 0 auto 20px;
+            }
+            h1 { font-size: 24px; margin-bottom: 10px; }
+            p { font-size: 16px; color: #517185; line-height: 1.5; margin-bottom: 30px; }
+            a {
+                display: inline-block;
+                background-color: #3B82F6;
+                color: white;
+                text-decoration: none;
+                padding: 14px 24px;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 16px;
+                transition: background 0.3s;
+            }
+            a:hover { background-color: #2563EB; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="icon">✓</div>
+            <h1>¡Cuenta verificada!</h1>
+            <p>El correo de <strong>AllergenSmart</strong> ha sido confirmado con éxito. Ya puedes cerrar esta ventana y regresar a la aplicación para iniciar sesión.</p>
+            <a href="allergensmart://">Abrir AllergenSmart</a>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
