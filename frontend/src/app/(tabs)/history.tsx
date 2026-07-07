@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
 import { FontFamily, FontSize } from '@/constants/Typography';
@@ -19,6 +19,14 @@ import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { getUserScanHistory, mapAlertLevelToStatus } from '@/services/api';
 
 type FilterType = 'Todo' | 'Peligros' | 'Precaución' | 'Seguros';
+
+// Map route param → FilterType
+const paramToFilter: Record<string, FilterType> = {
+  all: 'Todo',
+  danger: 'Peligros',
+  warning: 'Precaución',
+  safe: 'Seguros',
+};
 
 // Formatea el mes y año actual en español
 const getCurrentMonthYear = (): string => {
@@ -29,10 +37,20 @@ const getCurrentMonthYear = (): string => {
 
 export default function HistoryTab() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ filter?: string }>();
   const { history, setActiveScan, setHistory } = useAppStore();
-  const [filter, setFilter] = useState<FilterType>('Todo');
+  const [filter, setFilter] = useState<FilterType>(
+    paramToFilter[params.filter || ''] || 'Todo'
+  );
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Si el param cambia (por ej. al tocar otra stat card desde home), actualizar el filtro
+  useEffect(() => {
+    if (params.filter && paramToFilter[params.filter]) {
+      setFilter(paramToFilter[params.filter]);
+    }
+  }, [params.filter]);
 
   // Cargar historial del backend al montar
   useEffect(() => {
