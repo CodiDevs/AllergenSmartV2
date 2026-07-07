@@ -105,6 +105,7 @@ export default function RootLayout() {
         <Stack.Screen name="processing" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="warning" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="summary" options={{ headerShown: false, animation: 'slide_from_right' }} />
       </Stack>
     </>
   );

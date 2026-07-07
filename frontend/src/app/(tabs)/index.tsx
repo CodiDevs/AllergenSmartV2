@@ -314,7 +314,7 @@ export default function HomeTab() {
             <Text style={styles.statLabel}>Escaneos totales</Text>
             <Text style={[styles.statNum, { color: Colors.primary }]}>{totalScans}</Text>
             <View style={[styles.statSubContainer, { backgroundColor: '#EEF3FF' }]}>
-              <Text style={[styles.statSubText, { color: '#185FA5' }]}>ver todos →</Text>
+              <Text style={[styles.statSubText, { color: '#185FA5' }]}>este mes</Text>
             </View>
           </TouchableOpacity>
 
@@ -338,7 +338,7 @@ export default function HomeTab() {
             <Text style={styles.statLabel}>Productos seguros</Text>
             <Text style={[styles.statNum, { color: Colors.success }]}>{safeProductsCount}</Text>
             <View style={[styles.statSubContainer, { backgroundColor: Colors.successSurface }]}>
-              <Text style={[styles.statSubText, { color: Colors.successDark }]}>ver seguros →</Text>
+              <Text style={[styles.statSubText, { color: Colors.successDark }]}>guardados</Text>
             </View>
           </TouchableOpacity>
 
@@ -350,7 +350,7 @@ export default function HomeTab() {
             <Text style={styles.statLabel}>Peligros evitados</Text>
             <Text style={[styles.statNum, { color: Colors.warning }]}>{preventedCount}</Text>
             <View style={[styles.statSubContainer, { backgroundColor: Colors.warningSurface }]}>
-              <Text style={[styles.statSubText, { color: Colors.warningDark }]}>ver peligros →</Text>
+              <Text style={[styles.statSubText, { color: Colors.warningDark }]}>esta semana</Text>
             </View>
           </TouchableOpacity>
         </View>
