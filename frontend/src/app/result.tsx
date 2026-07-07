@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,10 +16,17 @@ import { FontFamily, FontSize } from '@/constants/Typography';
 import { useAppStore, FavoriteItem } from '@/store/appStore';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import type { AllergenMatch } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import { ProductShareCard } from '@/components/share/ProductShareCard';
+import { ActivityIndicator } from 'react-native';
 
 export default function ResultScreen() {
   const router = useRouter();
   const { activeScan, addFavorite, addHistoryItem, favorites } = useAppStore();
+  const { user } = useAuthStore();
+  const shareUserName = user?.user_metadata?.full_name || '';
 
   // Fallback si no hay escaneo activo
   const scan = activeScan || {
@@ -42,6 +49,9 @@ export default function ResultScreen() {
   // Campos que pueden faltar si el scan viene del historial
   const allergens: string[] = (scan as any).allergens ?? [];
   const rawIngredients: string = (scan as any).rawIngredients ?? '';
+
+  const shareRef = React.useRef<ViewShot>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const themeColors = isDanger
     ? {
@@ -128,9 +138,11 @@ export default function ResultScreen() {
     }
   };
 
-  const handleSecondaryAction = () => {
+  const handleSecondaryAction = async () => {
+    if (isSharing) return;
+    
+    // Si era danger y antes guardaba en historial, ahora lo guardamos automáticamente antes de compartir
     if (isDanger) {
-      // Danger: Save to history
       addHistoryItem({
         name: scan.name,
         brand: scan.brand,
@@ -141,11 +153,28 @@ export default function ResultScreen() {
         allergens: allergens,
         rawIngredients: rawIngredients,
       });
-      alert('Guardado en el historial de alertas');
-      router.replace('/(tabs)/history');
-    } else {
-      // Safe: Share with family
-      alert('Compartiendo enlace del producto seguro con tu familia...');
+    }
+
+    setIsSharing(true);
+    try {
+      if (shareRef.current && shareRef.current.capture) {
+        const uri = await shareRef.current.capture();
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/jpeg',
+            dialogTitle: 'Compartir Producto',
+            UTI: 'public.jpeg',
+          });
+        } else {
+          Alert.alert('Error', 'Compartir no está disponible');
+        }
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      Alert.alert('Error', 'No se pudo generar la imagen.');
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -356,12 +385,31 @@ export default function ResultScreen() {
           style={[styles.secBtn, { borderColor: isDanger ? Colors.dangerBorder : Colors.successBorder }]}
           activeOpacity={0.8}
           onPress={handleSecondaryAction}
+          disabled={isSharing}
         >
-          <Text style={[styles.secBtnText, { color: isDanger ? Colors.dangerMid : Colors.successMid }]}>
-            {isDanger ? 'Guardar en historial' : 'Compartir con familia'}
-          </Text>
+          {isSharing ? (
+            <ActivityIndicator size="small" color={isDanger ? Colors.dangerMid : Colors.successMid} />
+          ) : (
+            <Text style={[styles.secBtnText, { color: isDanger ? Colors.dangerMid : Colors.successMid }]}>
+              Compartir con familia
+            </Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* OFF-SCREEN RENDER FOR SHARING */}
+      <View style={{ position: 'absolute', top: -10000, left: -10000 }}>
+        <ViewShot ref={shareRef} options={{ format: 'jpg', quality: 0.95 }}>
+          <ProductShareCard 
+            productName={scan.name}
+            brand={scan.brand || 'Desconocida'}
+            status={scan.status}
+            allergens={allergens}
+            confidence={scan.confidence}
+            userName={shareUserName}
+          />
+        </ViewShot>
+      </View>
     </SafeAreaView>
   );
 }

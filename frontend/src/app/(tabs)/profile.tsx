@@ -23,6 +23,9 @@ import {
 } from '@/store/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiScale } from '@/hooks/useUiScale';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import { ProfileShareCard } from '@/components/share/ProfileShareCard';
 import {
   getUserProfile,
   getAllergenCatalog,
@@ -36,6 +39,10 @@ export default function ProfileTab() {
   const scale = useUiScale();
   const { allergens, addAllergen, removeAllergen, setAllergens, history, uiScale, setUiScale } = useAppStore();
   const { user, signOut } = useAuthStore();
+  
+  // Ref para capturar la imagen de la tarjeta de perfil
+  const shareRef = React.useRef<ViewShot>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Nombre y email reales desde Supabase Auth
   const userName = user?.user_metadata?.full_name || 'Usuario';
@@ -53,7 +60,36 @@ export default function ProfileTab() {
   const safeCount = useAppStore(selectSafeCount);
   const avoidedCount = useAppStore(selectDangerCount);
 
-  // ─── Cargar perfil del backend al montar ─────────────────────────────────────
+  // ── Share Profile Logic ──────────────────────────────────────────────────
+  const handleShareProfile = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+      if (shareRef.current && shareRef.current.capture) {
+        // Capturar la imagen
+        const uri = await shareRef.current.capture();
+        
+        // Verificar si se puede compartir
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/jpeg',
+            dialogTitle: 'Compartir Perfil de Alergias',
+            UTI: 'public.jpeg',
+          });
+        } else {
+          Alert.alert('Error', 'Compartir no está disponible en este dispositivo');
+        }
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      Alert.alert('Error', 'No se pudo generar la imagen para compartir.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // ── Handle Tab Navigation ──────────────────────────────────────────────────
   useEffect(() => {
     loadProfile();
   }, []);
@@ -411,15 +447,26 @@ export default function ProfileTab() {
             </TouchableOpacity>
 
             {/* Family sharing */}
-            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            <TouchableOpacity 
+              style={styles.settingItem} 
+              activeOpacity={0.7}
+              onPress={handleShareProfile}
+              disabled={isSharing}
+            >
               <View style={[styles.settingIcon, { backgroundColor: '#EEF3FF' }]}>
-                <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round">
-                  <Path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                  <Circle cx="9" cy="7" r="4" />
-                  <Path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-                </Svg>
+                {isSharing ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round">
+                    <Path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <Circle cx="9" cy="7" r="4" />
+                    <Path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                  </Svg>
+                )}
               </View>
-              <Text style={styles.settingText}>Compartir con familia</Text>
+              <Text style={styles.settingText}>
+                {isSharing ? 'Generando...' : 'Compartir con familia'}
+              </Text>
               <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" strokeWidth="2">
                 <Path d="M9 18l6-6-6-6" />
               </Svg>
@@ -448,8 +495,20 @@ export default function ProfileTab() {
             <Text style={styles.footerText}>SmartAllergen v1.0.0 · CodiDevs</Text>
           </View>
         </View>
-
       </ScrollView>
+
+      {/* OFF-SCREEN RENDER FOR SHARING */}
+      <View style={{ position: 'absolute', top: -10000, left: -10000 }}>
+        <ViewShot ref={shareRef} options={{ format: 'jpg', quality: 0.95 }}>
+          <ProfileShareCard 
+            userName={userName} 
+            allergens={allergens}
+            totalScans={totalScans}
+            safeCount={safeCount}
+            dangerCount={avoidedCount}
+          />
+        </ViewShot>
+      </View>
     </SafeAreaView>
   );
 }
