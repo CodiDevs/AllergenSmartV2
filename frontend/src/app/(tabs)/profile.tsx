@@ -432,15 +432,19 @@ export default function ProfileTab() {
               </Svg>
             </TouchableOpacity>
 
-            {/* Medical History */}
-            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            {/* Mis Estadísticas */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              activeOpacity={0.7}
+              onPress={() => router.push('/summary')}
+            >
               <View style={[styles.settingIcon, { backgroundColor: '#EEF3FF' }]}>
                 <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round">
                   <Rect x="3" y="3" width="18" height="18" rx="3" />
                   <Path d="M9 9h6M9 12h6M9 15h4" />
                 </Svg>
               </View>
-              <Text style={styles.settingText}>Historial médico</Text>
+              <Text style={styles.settingText}>Mis Estadísticas</Text>
               <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" strokeWidth="2">
                 <Path d="M9 18l6-6-6-6" />
               </Svg>
