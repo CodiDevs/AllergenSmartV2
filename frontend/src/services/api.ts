@@ -244,13 +244,21 @@ async function apiFetch<T>(
 ): Promise<T> {
   const headers = await getAuthHeaders();
 
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      ...headers,
-      ...(options.headers as Record<string, string> | undefined),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        ...headers,
+        ...(options.headers as Record<string, string> | undefined),
+      },
+    });
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('Network request failed')) {
+      throw new Error('No hay conexión a internet. Verifica tu red e intenta de nuevo.');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     let errorMessage = `Error ${response.status}`;
@@ -418,11 +426,19 @@ export async function createReport(params: {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   // No poner Content-Type manualmente — fetch lo setea con el boundary correcto
 
-  const response = await fetch(`${BASE_URL}/reports`, {
-    method: 'POST',
-    headers,
-    body: formData,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/reports`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('Network request failed')) {
+      throw new Error('No hay conexión a internet. Verifica tu red e intenta de nuevo.');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));

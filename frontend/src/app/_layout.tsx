@@ -21,6 +21,8 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { OfflineBanner } from '@/components/offline-banner';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
@@ -90,8 +92,9 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="dark" />
+      <OfflineBanner />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -107,6 +110,6 @@ export default function RootLayout() {
         <Stack.Screen name="notifications" options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="summary" options={{ headerShown: false, animation: 'slide_from_right' }} />
       </Stack>
-    </>
+    </ErrorBoundary>
   );
 }
