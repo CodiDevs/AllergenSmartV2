@@ -115,6 +115,12 @@ interface AppState {
   // Input pendiente de enviar al backend (se lee en processing.tsx)
   pendingScan: PendingScan | null;
 
+  // Bandera de onboarding
+  hasSeenOnboarding: boolean;
+  
+  // Hidratación del store local
+  _hasHydrated: boolean;
+
   // ─── Acciones ───────────────────────────────────────────────────────────────
 
   // Alérgenos
@@ -140,6 +146,11 @@ interface AppState {
 
   // Accesibilidad
   setUiScale: (scale: UiScale) => void;
+
+  // Onboarding
+  completeOnboarding: () => void;
+
+  setHasHydrated: (state: boolean) => void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -154,6 +165,8 @@ export const useAppStore = create<AppState>()(
   favorites: [],
   activeScan: null,
   pendingScan: null,
+  hasSeenOnboarding: false,
+  _hasHydrated: false,
 
   // ─── Alérgenos ──────────────────────────────────────────────────────────────
 
@@ -221,6 +234,11 @@ export const useAppStore = create<AppState>()(
   // ─── Accesibilidad ──────────────────────────────────────────────────────────
 
   setUiScale: (scale) => set({ uiScale: scale }),
+
+  // ─── Onboarding ─────────────────────────────────────────────────────────────
+
+  completeOnboarding: () => set({ hasSeenOnboarding: true }),
+  setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: 'allergensmart-app-storage',
@@ -230,7 +248,11 @@ export const useAppStore = create<AppState>()(
         allergens: state.allergens,
         history: state.history,
         favorites: state.favorites,
+        // hasSeenOnboarding: state.hasSeenOnboarding, // TODO: Descomentar luego de que el usuario lo pruebe
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

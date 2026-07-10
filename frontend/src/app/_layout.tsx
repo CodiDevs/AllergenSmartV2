@@ -21,6 +21,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useAppStore } from '@/store/appStore';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { OfflineBanner } from '@/components/offline-banner';
 
@@ -43,6 +44,7 @@ export default function RootLayout() {
   });
 
   const { session, loading, initialize } = useAuthStore();
+  const { hasSeenOnboarding, _hasHydrated } = useAppStore();
 
   // Inicializar auth una sola vez al montar
   useEffect(() => {
@@ -62,18 +64,28 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  // Gestión de navegación: redirige según el estado de sesión.
+  // Gestión de navegación: redirige según el estado de sesión y onboarding.
   // Este efecto puede ejecutarse varias veces — NO llama a hideAsync.
   useEffect(() => {
-    if (loading || !fontsLoaded) return;
+    if (loading || !fontsLoaded || !_hasHydrated) return;
 
     // Check if the user is currently inside the (auth) directory
     const inAuthGroup = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === 'onboarding';
 
-    if (!session && !inAuthGroup) {
+    // 1. Mostrar Onboarding primero si no lo ha visto
+    if (!hasSeenOnboarding) {
+      if (!inOnboarding) {
+        router.replace('/onboarding');
+      }
+      return;
+    }
+
+    // 2. Si ya vio el onboarding, manejar sesión
+    if (!session && !inAuthGroup && !inOnboarding) {
       // Redirect to login if there is no session
       router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
+    } else if (session && (inAuthGroup || inOnboarding)) {
       // Redirect to main tabs if session exists
       router.replace('/(tabs)');
 
@@ -85,7 +97,7 @@ export default function RootLayout() {
         generateWelcomeNotification(name);
       }
     }
-  }, [session, loading, segments, fontsLoaded]);
+  }, [session, loading, segments, fontsLoaded, hasSeenOnboarding, _hasHydrated]);
 
   if (!fontsLoaded) {
     return null;
@@ -103,6 +115,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="result" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="processing" options={{ headerShown: false, presentation: 'modal' }} />
