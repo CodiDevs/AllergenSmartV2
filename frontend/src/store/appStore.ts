@@ -248,7 +248,7 @@ export const useAppStore = create<AppState>()(
         allergens: state.allergens,
         history: state.history,
         favorites: state.favorites,
-        // hasSeenOnboarding: state.hasSeenOnboarding, // TODO: Descomentar luego de que el usuario lo pruebe
+        hasSeenOnboarding: state.hasSeenOnboarding,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

@@ -10,6 +10,7 @@
 
 import { supabase } from './supabase';
 import Constants from 'expo-constants';
+import { useAuthStore } from '@/stores/authStore';
 
 // ─── Configuración ────────────────────────────────────────────────────────────
 
@@ -261,6 +262,11 @@ async function apiFetch<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      useAuthStore.getState().signOut();
+      throw new Error('Tu sesión ha expirado. Por favor ingresa de nuevo.');
+    }
+
     let errorMessage = `Error ${response.status}`;
     let errorCode: string | undefined;
     let actionRequired: string | undefined;
@@ -441,6 +447,11 @@ export async function createReport(params: {
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      useAuthStore.getState().signOut();
+      throw new Error('Tu sesión ha expirado. Por favor ingresa de nuevo.');
+    }
+
     const errorBody = await response.json().catch(() => ({}));
     const detail = errorBody.detail ?? errorBody;
     throw new Error(detail.message || `Error ${response.status}`);
