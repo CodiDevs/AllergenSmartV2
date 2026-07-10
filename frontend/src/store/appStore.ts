@@ -9,6 +9,8 @@
  *   desde el array `history` usando selectores, no se guardan como estado separado.
  */
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AllergenMatch, ScanSource } from '@/services/api';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -28,7 +30,7 @@ export interface HistoryItem {
   detail: string;
   time: string;
   date: 'Hoy' | 'Ayer' | string;
-  dateRaw: Date;
+  dateRaw: string | Date;
   status: 'safe' | 'warning' | 'danger';
   warningType?: 'blurry' | 'partial';
   confidence?: number;
@@ -142,7 +144,9 @@ interface AppState {
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
   // Estado inicial — todo vacío, sin datos inventados
   uiScale: 'medium',
   allergens: [],
@@ -217,7 +221,19 @@ export const useAppStore = create<AppState>((set) => ({
   // ─── Accesibilidad ──────────────────────────────────────────────────────────
 
   setUiScale: (scale) => set({ uiScale: scale }),
-}));
+    }),
+    {
+      name: 'allergensmart-app-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        uiScale: state.uiScale,
+        allergens: state.allergens,
+        history: state.history,
+        favorites: state.favorites,
+      }),
+    }
+  )
+);
 
 // ─── Selectores (estadísticas calculadas) ─────────────────────────────────────
 // Úsalos en los componentes en lugar de guardar contadores como estado separado.
