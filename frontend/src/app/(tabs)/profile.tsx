@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
@@ -310,41 +311,6 @@ export default function ProfileTab() {
             </View>
           </View>
 
-          {/* Modal para Editar Nombre */}
-          {showEditName && (
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Editar Nombre</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={editNameValue}
-                  onChangeText={setEditNameValue}
-                  placeholder="Escribe tu nombre"
-                  placeholderTextColor={Colors.textQuaternary}
-                />
-                <View style={styles.modalActions}>
-                  <TouchableOpacity 
-                    style={styles.modalCancelBtn} 
-                    onPress={() => setShowEditName(false)}
-                    disabled={isUpdatingName}
-                  >
-                    <Text style={styles.modalCancelText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.modalSaveBtn} 
-                    onPress={handleSaveName}
-                    disabled={isUpdatingName}
-                  >
-                    {isUpdatingName ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <Text style={styles.modalSaveText}>Guardar</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          )}
 
           {/* Header stats row */}
           <View style={styles.headerStats}>
@@ -654,6 +620,68 @@ export default function ProfileTab() {
           />
         </ViewShot>
       </View>
+
+      {/* ── Modal Editar Nombre ── */}
+      <Modal
+        visible={showEditName}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEditName(false)}
+      >
+        <View style={styles.editModalBackdrop}>
+          <View style={styles.editModalCard}>
+            {/* Icono decorativo */}
+            <View style={styles.editModalIconCircle}>
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke={Colors.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke={Colors.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </View>
+
+            <Text style={styles.editModalTitle}>Editar nombre</Text>
+            <Text style={styles.editModalSubtitle}>Este nombre será visible en tu perfil y en los reportes compartidos.</Text>
+
+            <View style={styles.editModalInputWrap}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ marginRight: 10, flexShrink: 0 }}>
+                <Path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke={Colors.textTertiary} strokeWidth={1.8} strokeLinecap="round" />
+                <Circle cx={12} cy={7} r={4} stroke={Colors.textTertiary} strokeWidth={1.8} />
+              </Svg>
+              <TextInput
+                style={styles.editModalInput}
+                value={editNameValue}
+                onChangeText={setEditNameValue}
+                placeholder="Tu nombre completo"
+                placeholderTextColor={Colors.textQuaternary}
+                autoFocus
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.editModalBtns}>
+              <TouchableOpacity
+                style={styles.editModalCancelBtn}
+                onPress={() => setShowEditName(false)}
+                disabled={isUpdatingName}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.editModalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.editModalSaveBtn, isUpdatingName && { opacity: 0.7 }]}
+                onPress={handleSaveName}
+                disabled={isUpdatingName}
+                activeOpacity={0.85}
+              >
+                {isUpdatingName ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.editModalSaveText}>Guardar cambios</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -663,67 +691,96 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFBFF',
   },
-  modalOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  editModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'center',
-    padding: 20,
-    zIndex: 1000,
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    alignItems: 'center',
     padding: 24,
+  },
+  editModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    padding: 28,
     width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+    maxWidth: 380,
+    alignItems: 'center',
+    shadowColor: '#1A2340',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.18,
+    shadowRadius: 32,
+    elevation: 16,
   },
-  modalTitle: {
+  editModalIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  editModalTitle: {
     fontFamily: FontFamily.nunitoBold,
-    fontSize: 20,
+    fontSize: 22,
     color: Colors.textPrimary,
-    marginBottom: 20,
-    textAlign: 'center',
+    marginBottom: 6,
   },
-  modalInput: {
+  editModalSubtitle: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 13,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 22,
+    paddingHorizontal: 8,
+  },
+  editModalInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1.5,
     borderColor: Colors.borderInput,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 6,
+    width: '100%',
+    marginBottom: 24,
+  },
+  editModalInput: {
+    flex: 1,
     fontFamily: FontFamily.interRegular,
     fontSize: 15,
     color: Colors.textPrimary,
-    backgroundColor: Colors.bgInput,
-    marginBottom: 24,
+    padding: 0,
   },
-  modalActions: {
+  editModalBtns: {
     flexDirection: 'row',
     gap: 12,
+    width: '100%',
   },
-  modalCancelBtn: {
+  editModalCancelBtn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 15,
+    borderRadius: 16,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalCancelText: {
+  editModalCancelText: {
     fontFamily: FontFamily.interSemiBold,
     fontSize: 15,
     color: Colors.textSecondary,
   },
-  modalSaveBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
+  editModalSaveBtn: {
+    flex: 1.3,
+    paddingVertical: 15,
+    borderRadius: 16,
     backgroundColor: Colors.primary,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalSaveText: {
+  editModalSaveText: {
     fontFamily: FontFamily.interSemiBold,
     fontSize: 15,
     color: '#FFFFFF',
