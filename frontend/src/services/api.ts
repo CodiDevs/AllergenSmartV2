@@ -210,9 +210,21 @@ export interface BarcodeProductResult {
   verified_by_admin: boolean;
   from_cache: boolean;        // true = BD local, false = Open Food Facts
   image_url: string | null;
+  categories: string[] | null;
 }
 
-// ─── Tipos de reportes ────────────────────────────────────────────────────────
+/**
+ * OFFTinyProduct — producto simplificado devuelto por la búsqueda por nombre de Open Food Facts.
+ */
+export interface OFFTinyProduct {
+  id: string;
+  product_name?: string;
+  brands?: string;
+  image_front_small_url?: string;
+  ingredients_text?: string;
+}
+
+// ─── Peticiones base ─────────────────────────────────────────────────────────
 
 export interface ReportResponse {
   id: string;
@@ -399,6 +411,24 @@ export async function scanProductByBarcode(
     }
     // Cualquier otro error (red, servidor) → propagar
     throw err;
+  }
+}
+
+/**
+ * GET openfoodfacts
+ * Busca productos por nombre directamente en la API pública de Open Food Facts.
+ * Se usa para autocompletar en la entrada manual.
+ */
+export async function searchProductsByName(query: string): Promise<OFFTinyProduct[]> {
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.products || [];
+  } catch (err) {
+    console.warn('Error searching OFF:', err);
+    return [];
   }
 }
 

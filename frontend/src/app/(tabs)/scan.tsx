@@ -35,7 +35,7 @@ import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
 import { FontFamily } from '@/constants/Typography';
 import { useAppStore } from '@/store/appStore';
-import { encodeTextAsBase64, scanProductByBarcode, type BarcodeProductResult } from '@/services/api';
+import { encodeTextAsBase64, scanProductByBarcode, searchProductsByName, type BarcodeProductResult, type OFFTinyProduct } from '@/services/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -53,6 +53,11 @@ export default function ScanScreen() {
   const [productName, setProductName] = useState('');
   const [ingredientsText, setIngredientsText] = useState('');
   const [barcodeText, setBarcodeText] = useState('');
+
+  // ─── Estado búsqueda manual ────────────────────────────────────────────────
+  const [searchResults, setSearchResults] = useState<OFFTinyProduct[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Estado barcode ────────────────────────────────────────────────────────
   const [barcodeScanning, setBarcodeScanning] = useState(true);  // false mientras procesa
@@ -164,6 +169,35 @@ export default function ScanScreen() {
     });
     router.push('/processing');
   }, []);
+
+  // ─── Búsqueda manual de productos (Autocomplete) ──────────────────────────
+  const handleProductNameChange = (text: string) => {
+    setProductName(text);
+    if (!text.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await searchProductsByName(text);
+        setSearchResults(results);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 600);
+  };
+
+  const handleSelectProduct = (product: OFFTinyProduct) => {
+    setProductName(product.product_name || 'Producto seleccionado');
+    if (product.id) setBarcodeText(product.id);
+    if (product.ingredients_text) setIngredientsText(product.ingredients_text);
+    setSearchResults([]);
+  };
 
   // ─── Análisis manual ───────────────────────────────────────────────────────
   const handleAnalyzeManual = useCallback(() => {
@@ -560,11 +594,34 @@ export default function ScanScreen() {
               <TextInput
                 style={styles.fieldInput}
                 value={productName}
-                onChangeText={setProductName}
+                onChangeText={handleProductNameChange}
                 placeholder="Ej: Galletas María"
                 placeholderTextColor={Colors.textQuaternary}
               />
+              {isSearching && <ActivityIndicator size="small" color={Colors.primary} style={{ marginLeft: 8 }} />}
             </View>
+
+            {/* Resultados de autocompletado */}
+            {searchResults.length > 0 && (
+              <ScrollView 
+                style={styles.searchResultsContainer}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+              >
+                {searchResults.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={styles.searchResultItem}
+                    onPress={() => handleSelectProduct(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.searchResultText} numberOfLines={1}>
+                      {item.product_name} {item.brands ? `(${item.brands})` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           <View style={styles.fieldGroup}>
@@ -579,20 +636,6 @@ export default function ScanScreen() {
               placeholderTextColor={Colors.textQuaternary}
               textAlignVertical="top"
             />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Código de barras (opcional)</Text>
-            <View style={styles.fieldRow}>
-              <TextInput
-                style={styles.fieldInput}
-                value={barcodeText}
-                onChangeText={setBarcodeText}
-                placeholder="Ej: 7861000123456"
-                placeholderTextColor={Colors.textQuaternary}
-                keyboardType="numeric"
-              />
-            </View>
           </View>
         </View>
 
@@ -1077,12 +1120,35 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgInput,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   fieldInput: {
+    flex: 1,
     fontFamily: FontFamily.interRegular,
     fontSize: 13,
     color: Colors.textPrimary,
     padding: 0,
+  },
+  searchResultsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: Colors.borderInput,
+    borderRadius: 8,
+    marginTop: 4,
+    maxHeight: 180,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  searchResultText: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 13,
+    color: Colors.textPrimary,
   },
   textArea: {
     borderWidth: 1.5,
