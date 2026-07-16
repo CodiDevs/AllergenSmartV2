@@ -342,6 +342,16 @@ export async function updateUserProfile(body: UserProfileUpdate): Promise<UserPr
 }
 
 /**
+ * DELETE /users/me
+ * Elimina la cuenta del usuario permanentemente.
+ */
+export async function deleteUserAccount(): Promise<void> {
+  await apiFetch<{ message: string }>('/users/me', {
+    method: 'DELETE',
+  });
+}
+
+/**
  * PUT /users/me/allergies
  * Reemplaza TODAS las alergias del usuario (operación idempotente).
  * Recibe la lista completa de alergias con allergen_id y severity.

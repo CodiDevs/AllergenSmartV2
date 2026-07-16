@@ -68,6 +68,27 @@ class UserService:
             raise UserNotFoundException(user_id=str(user_id))
         return self._to_response(updated)
 
+    async def delete_account(self, user_id: UUID) -> None:
+        """
+        Borra la cuenta del usuario en la BD local y en Supabase Auth.
+        """
+        # 1. Borrar perfil de la BD local
+        profile = await self.repo.get_by_id(user_id)
+        if profile:
+            await self.repo.delete(profile)
+        
+        # 2. Borrar de Supabase Auth usando la service_role_key
+        from app.core.config import settings
+        from supabase import create_client
+        
+        if settings.supabase_url and settings.supabase_service_role_key:
+            try:
+                supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
+                supabase.auth.admin.delete_user(str(user_id))
+            except Exception as e:
+                # Loggear pero no fallar si ya fue borrado o hay un error menor
+                print(f"Error borrando usuario en Supabase: {e}")
+
     async def replace_allergies(
         self, user_id: UUID, data: UserAllergiesUpdate
     ) -> int:

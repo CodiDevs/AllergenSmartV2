@@ -33,6 +33,8 @@ import {
   updateUserAllergies,
   mapSeverityToStore,
   type UserAllergyEntry,
+  updateUserProfile,
+  deleteUserAccount,
 } from '@/services/api';
 
 export default function ProfileTab() {
@@ -55,6 +57,11 @@ export default function ProfileTab() {
   const [newAllergenNote, setNewAllergenNote] = useState('');
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [syncingAllergies, setSyncingAllergies] = useState(false);
+
+  // Estados para Edición de Nombre
+  const [showEditName, setShowEditName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState(userName);
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
 
   // Estadísticas calculadas desde historial real
   const totalScans = history.length;
@@ -194,6 +201,45 @@ export default function ProfileTab() {
     await signOut();
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Eliminar cuenta",
+      "¿Estás seguro de que quieres eliminar tu cuenta permanentemente? Perderás todos tus escaneos y configuración. Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Eliminar", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteUserAccount();
+              await signOut();
+            } catch (e: any) {
+              Alert.alert("Error", "No se pudo eliminar la cuenta. " + (e?.message || ''));
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleSaveName = async () => {
+    if (!editNameValue.trim()) return;
+    setIsUpdatingName(true);
+    try {
+      await updateUserProfile({ full_name: editNameValue.trim() });
+      // Forzar reload en Supabase recargando la sesión para ver el nuevo nombre
+      // O simplemente cerrar modal, la próxima vez que se cargue estará allí.
+      // Modificamos el store manualmente si tuviéramos update en authStore, pero cerramos modal por ahora
+      Alert.alert("Éxito", "Nombre actualizado correctamente. Los cambios podrían tardar unos instantes en reflejarse globalmente.");
+      setShowEditName(false);
+    } catch (e: any) {
+      Alert.alert("Error", "No se pudo actualizar el nombre.");
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+
   const handleRemoveAllergen = (id: string) => {
     removeAllergen(id);
     const updatedList = allergens.filter((a) => a.id !== id);
@@ -245,10 +291,60 @@ export default function ProfileTab() {
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.profileDetails}>
-              <Text style={styles.profileName}>{userName}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.profileName}>{userName}</Text>
+                <TouchableOpacity 
+                  style={{ marginLeft: 8 }} 
+                  onPress={() => {
+                    setEditNameValue(userName);
+                    setShowEditName(true);
+                  }}
+                >
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                    <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke={Colors.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                    <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke={Colors.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
               <Text style={styles.profileEmail}>{userEmail}</Text>
             </View>
           </View>
+
+          {/* Modal para Editar Nombre */}
+          {showEditName && (
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Editar Nombre</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editNameValue}
+                  onChangeText={setEditNameValue}
+                  placeholder="Escribe tu nombre"
+                  placeholderTextColor={Colors.textQuaternary}
+                />
+                <View style={styles.modalActions}>
+                  <TouchableOpacity 
+                    style={styles.modalCancelBtn} 
+                    onPress={() => setShowEditName(false)}
+                    disabled={isUpdatingName}
+                  >
+                    <Text style={styles.modalCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.modalSaveBtn} 
+                    onPress={handleSaveName}
+                    disabled={isUpdatingName}
+                  >
+                    {isUpdatingName ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <Text style={styles.modalSaveText}>Guardar</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Header stats row */}
           <View style={styles.headerStats}>
@@ -506,16 +602,33 @@ export default function ProfileTab() {
 
             {/* Log Out */}
             <TouchableOpacity
-              style={[styles.settingItem, { borderBottomWidth: 0 }]}
+              style={styles.settingItem}
               activeOpacity={0.7}
               onPress={handleLogOut}
             >
-              <View style={[styles.settingIcon, { backgroundColor: Colors.dangerSurface }]}>
-                <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.danger} strokeWidth="1.8" strokeLinecap="round">
+              <View style={[styles.settingIcon, { backgroundColor: '#F1F5F9' }]}>
+                <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.textSecondary} strokeWidth="1.8" strokeLinecap="round">
                   <Path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
                 </Svg>
               </View>
-              <Text style={[styles.settingText, { color: Colors.danger }]}>Cerrar sesión</Text>
+              <Text style={styles.settingText}>Cerrar sesión</Text>
+              <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={Colors.borderInput} strokeWidth="2">
+                <Path d="M9 18l6-6-6-6" />
+              </Svg>
+            </TouchableOpacity>
+
+            {/* Eliminar Cuenta */}
+            <TouchableOpacity
+              style={[styles.settingItem, { borderBottomWidth: 0 }]}
+              activeOpacity={0.7}
+              onPress={handleDeleteAccount}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: Colors.dangerSurface }]}>
+                <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.danger} strokeWidth="1.8" strokeLinecap="round">
+                  <Path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                </Svg>
+              </View>
+              <Text style={[styles.settingText, { color: Colors.danger }]}>Eliminar cuenta</Text>
               <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={Colors.dangerLight} strokeWidth="2">
                 <Path d="M9 18l6-6-6-6" />
               </Svg>
@@ -549,6 +662,71 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFBFF',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontFamily: FontFamily.nunitoBold,
+    fontSize: 20,
+    color: Colors.textPrimary,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalInput: {
+    borderWidth: 1.5,
+    borderColor: Colors.borderInput,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontFamily: FontFamily.interRegular,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.bgInput,
+    marginBottom: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontFamily: FontFamily.interSemiBold,
+    fontSize: 15,
+    color: Colors.textSecondary,
+  },
+  modalSaveBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+  },
+  modalSaveText: {
+    fontFamily: FontFamily.interSemiBold,
+    fontSize: 15,
+    color: '#FFFFFF',
   },
   scrollContent: {
     paddingBottom: Platform.OS === 'ios' ? 100 : 80,

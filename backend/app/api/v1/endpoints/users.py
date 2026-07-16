@@ -42,6 +42,20 @@ async def update_my_profile(
     return await UserService(db).update_profile(UUID(current_user["user_id"]), body)
 
 
+@router.delete(
+    "/me",
+    response_model=dict,
+    summary="Eliminar cuenta del usuario",
+)
+async def delete_my_account(
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    """Borra permanentemente la cuenta del usuario en BD y Supabase Auth."""
+    await UserService(db).delete_account(UUID(current_user["user_id"]))
+    return {"message": "Cuenta eliminada correctamente"}
+
+
 @router.put(
     "/me/allergies",
     response_model=dict,
