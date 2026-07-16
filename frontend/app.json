@@ -1,23 +1,21 @@
 {
   "expo": {
-    "name": "AllergenSmart",
+    "name": "SmartAllergen",
     "slug": "allergensmart",
     "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/app_icon.png",
     "scheme": "allergensmart",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/app_icon.png"
     },
     "android": {
       "package": "com.allergensmart.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#1A2340",
+        "foregroundImage": "./assets/images/app_icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -29,17 +27,18 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/app_icon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#1A2340",
+          "image": "./assets/images/app_icon.png",
+          "imageWidth": 200,
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "imageWidth": 200
           }
         }
       ],
@@ -48,7 +47,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "AllergenSmart necesita acceso a la cámara para escanear etiquetas de ingredientes y analizar alérgenos.",
+          "cameraPermission": "SmartAllergen necesita acceso a la cámara para escanear etiquetas de ingredientes y analizar alérgenos.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
@@ -56,8 +55,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "AllergenSmart necesita acceso a tu galería para analizar fotos de etiquetas de ingredientes.",
-          "cameraPermission": "AllergenSmart necesita acceso a la cámara para escanear etiquetas de ingredientes."
+          "photosPermission": "SmartAllergen necesita acceso a tu galería para analizar fotos de etiquetas de ingredientes.",
+          "cameraPermission": "SmartAllergen necesita acceso a la cámara para escanear etiquetas de ingredientes."
         }
       ]
     ],

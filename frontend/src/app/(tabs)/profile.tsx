@@ -22,6 +22,7 @@ import {
   selectDangerCount,
 } from '@/store/appStore';
 import { useAuthStore } from '@/stores/authStore';
+import { ProfileAllergenSkeleton } from '@/components/ui/skeleton';
 import { useUiScale } from '@/hooks/useUiScale';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -336,8 +337,18 @@ export default function ProfileTab() {
 
           {/* Allergens list */}
           <View style={styles.allergensList}>
-            {allergens.map((allergen) => {
-              const cfg = getSeverityBadgeStyle(allergen.severity);
+            {loadingProfile && allergens.length === 0 ? (
+              <View style={{ paddingTop: 8 }}>
+                <ProfileAllergenSkeleton />
+                <ProfileAllergenSkeleton />
+              </View>
+            ) : allergens.length === 0 ? (
+              <View style={{ padding: 24, alignItems: 'center' }}>
+                <Text style={{ color: '#8896B0', fontSize: 14, fontFamily: FontFamily.interMedium }}>No tienes alérgenos configurados.</Text>
+              </View>
+            ) : (
+              allergens.map((allergen) => {
+                const cfg = getSeverityBadgeStyle(allergen.severity);
 
               return (
                 <View key={allergen.id} style={styles.allergenItem}>
@@ -368,7 +379,7 @@ export default function ProfileTab() {
                   </View>
                 </View>
               );
-            })}
+            }))}
           </View>
 
           {/* Settings Section Header */}
@@ -471,6 +482,23 @@ export default function ProfileTab() {
               <Text style={styles.settingText}>
                 {isSharing ? 'Generando...' : 'Compartir con familia'}
               </Text>
+              <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" strokeWidth="2">
+                <Path d="M9 18l6-6-6-6" />
+              </Svg>
+            </TouchableOpacity>
+
+            {/* Aspectos Legales */}
+            <TouchableOpacity 
+              style={styles.settingItem} 
+              activeOpacity={0.7}
+              onPress={() => router.push('/terms')}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: '#EEF3FF' }]}>
+                <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="1.8" strokeLinecap="round">
+                  <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </Svg>
+              </View>
+              <Text style={styles.settingText}>Términos y Privacidad</Text>
               <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" strokeWidth="2">
                 <Path d="M9 18l6-6-6-6" />
               </Svg>

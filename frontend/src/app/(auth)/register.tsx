@@ -352,6 +352,18 @@ export default function RegisterScreen() {
             </View>
           )}
 
+          {/* Legal Notice */}
+          <Text style={styles.legalNotice}>
+            Al registrarte, aceptas nuestros{' '}
+            <Link href="/terms" asChild>
+              <Text style={styles.legalLink}>Términos y Condiciones</Text>
+            </Link>
+            {' '}y nuestra{' '}
+            <Link href="/privacy" asChild>
+              <Text style={styles.legalLink}>Política de Privacidad</Text>
+            </Link>.
+          </Text>
+
           {/* Continue Button */}
           <AppButton
             title="Registrar cuenta"
@@ -542,8 +554,23 @@ const styles = StyleSheet.create({
     color: '#1D9E75',
   },
   continueButton: {
-    marginTop: 4,
-    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  legalNotice: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 12,
+    color: '#8896B0',
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 10,
+    lineHeight: 18,
+  },
+  legalLink: {
+    fontFamily: FontFamily.interSemiBold,
+    color: Colors.primary,
   },
   footer: {
     flexDirection: 'row',

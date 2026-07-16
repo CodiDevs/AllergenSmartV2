@@ -15,6 +15,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
 import { FontFamily, FontSize } from '@/constants/Typography';
 import { useAppStore, HistoryItem } from '@/store/appStore';
+import { HistoryCardSkeleton } from '@/components/ui/skeleton';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { getUserScanHistory, mapAlertLevelToStatus } from '@/services/api';
 
@@ -256,8 +257,20 @@ export default function HistoryTab() {
 
         {/* Grouped List Content */}
         <View style={styles.listContainer}>
-          {Object.keys(groupedItems).map((date) => (
-            <View key={date}>
+          {loadingHistory && history.length === 0 ? (
+            <View style={{ paddingTop: 8 }}>
+              <HistoryCardSkeleton />
+              <HistoryCardSkeleton />
+              <HistoryCardSkeleton />
+              <HistoryCardSkeleton />
+            </View>
+          ) : Object.keys(groupedItems).length === 0 ? (
+            <View style={{ padding: 40, alignItems: 'center' }}>
+              <Text style={{ color: '#8896B0', fontSize: 15, fontFamily: FontFamily.interMedium }}>No hay escaneos que mostrar.</Text>
+            </View>
+          ) : (
+            Object.keys(groupedItems).map((date) => (
+              <View key={date}>
               <Text style={styles.dateHeader}>{date}</Text>
               
               {groupedItems[date].map((item) => {
@@ -292,7 +305,7 @@ export default function HistoryTab() {
                 );
               })}
             </View>
-          ))}
+          )))}
         </View>
 
         {/* Bottom Statistics Cards */}
