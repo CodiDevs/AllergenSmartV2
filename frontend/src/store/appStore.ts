@@ -135,6 +135,7 @@ interface AppState {
 
   // Historial
   addHistoryItem: (item: Omit<HistoryItem, 'id' | 'dateRaw'>) => void;
+  removeHistoryItem: (id: string) => void;
   clearHistory: () => void;
   setHistory: (items: HistoryItem[]) => void;
 
@@ -217,6 +218,11 @@ export const useAppStore = create<AppState>()(
       };
       return { history: [newItem, ...state.history] };
     }),
+
+  removeHistoryItem: (id) =>
+    set((state) => ({
+      history: state.history.filter((h) => h.id !== id),
+    })),
 
   clearHistory: () => set({ history: [] }),
 

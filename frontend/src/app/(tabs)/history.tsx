@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -39,7 +40,7 @@ const getCurrentMonthYear = (): string => {
 export default function HistoryTab() {
   const router = useRouter();
   const params = useLocalSearchParams<{ filter?: string }>();
-  const { history, setActiveScan, setHistory } = useAppStore();
+  const { history, setActiveScan, setHistory, removeHistoryItem, clearHistory } = useAppStore();
   const [filter, setFilter] = useState<FilterType>(
     paramToFilter[params.filter || ''] || 'Todo'
   );
@@ -179,6 +180,28 @@ export default function HistoryTab() {
     }
   };
 
+  const handleDeleteItem = (id: string, name: string) => {
+    Alert.alert(
+      'Eliminar registro',
+      `¿Deseas eliminar "${name}" del historial?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => removeHistoryItem(id) },
+      ]
+    );
+  };
+
+  const handleClearAll = () => {
+    Alert.alert(
+      'Vaciar historial',
+      '¿Estás seguro de que quieres eliminar todos los registros del historial?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Vaciar todo', style: 'destructive', onPress: () => clearHistory() },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -199,20 +222,34 @@ export default function HistoryTab() {
             <Text style={styles.topnavTitle}>Historial</Text>
             <Text style={styles.topnavSub}>{history.length} escaneos · {getCurrentMonthYear()}</Text>
           </View>
-          {loadingHistory ? (
-            <ActivityIndicator size="small" color={Colors.primary} />
-          ) : (
-            <TouchableOpacity
-              style={styles.iconBtn}
-              activeOpacity={0.8}
-              accessibilityLabel="Actualizar historial"
-              onPress={() => fetchHistory(true)}
-            >
-              <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2" strokeLinecap="round">
-                <Path d="M4 6h16M8 12h8M11 18h2" />
-              </Svg>
-            </TouchableOpacity>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {history.length > 0 && (
+              <TouchableOpacity
+                style={[styles.iconBtn, { backgroundColor: '#FEE2E2' }]}
+                activeOpacity={0.8}
+                accessibilityLabel="Vaciar historial"
+                onPress={handleClearAll}
+              >
+                <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={Colors.danger} strokeWidth="2" strokeLinecap="round">
+                  <Path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </Svg>
+              </TouchableOpacity>
+            )}
+            {loadingHistory ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <TouchableOpacity
+                style={styles.iconBtn}
+                activeOpacity={0.8}
+                accessibilityLabel="Actualizar historial"
+                onPress={() => fetchHistory(true)}
+              >
+                <Svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={Colors.primary} strokeWidth="2" strokeLinecap="round">
+                  <Path d="M4 6h16M8 12h8M11 18h2" />
+                </Svg>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Filter Scroll Row */}
@@ -296,10 +333,25 @@ export default function HistoryTab() {
                       </Text>
                     </View>
 
-                    <View style={[styles.badge, { backgroundColor: cfg.border }]}>
-                      <Text style={[styles.badgeText, { color: cfg.text }]}>
-                        {cfg.badgeText}
-                      </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={[styles.badge, { backgroundColor: cfg.border }]}>
+                        <Text style={[styles.badgeText, { color: cfg.text }]}>
+                          {cfg.badgeText}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        activeOpacity={0.7}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleDeleteItem(item.id, item.name);
+                        }}
+                        style={{ padding: 4 }}
+                      >
+                        <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.8" strokeLinecap="round">
+                          <Path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                        </Svg>
+                      </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
                 );
