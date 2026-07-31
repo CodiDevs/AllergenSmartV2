@@ -1,0 +1,252 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+.scene{display:flex;justify-content:center;padding:20px 0 28px;gap:24px;flex-wrap:wrap;font-family:'Inter',sans-serif;}
+
+.phone{width:295px;background:#FAFBFF;border-radius:40px;border:1.5px solid #E2E8F5;overflow:hidden;display:flex;flex-direction:column;}
+
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px;font-size:10px;color:#8896B0;font-family:'Inter',sans-serif;}
+.statusbar-right{display:flex;align-items:center;gap:5px;}
+
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 10px;}
+.topnav-left{display:flex;flex-direction:column;}
+.topnav-greeting{font-size:11px;color:#8896B0;font-family:'Inter',sans-serif;}
+.topnav-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:17px;color:#1A2340;}
+.topnav-right{display:flex;align-items:center;gap:8px;}
+.icon-btn{width:34px;height:34px;border-radius:10px;background:#EEF3FF;display:flex;align-items:center;justify-content:center;position:relative;border:none;cursor:pointer;}
+.notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:#E24B4A;border:1.5px solid #FAFBFF;}
+
+.hero-card{margin:0 16px 14px;background:#5A7BFA;border-radius:20px;padding:16px;display:flex;align-items:center;justify-content:space-between;overflow:hidden;position:relative;}
+.hero-card-bg{position:absolute;right:-10px;bottom:-10px;opacity:0.08;}
+.hero-text{flex:1;}
+.hero-eyebrow{font-size:10px;color:rgba(255,255,255,0.75);font-weight:500;margin-bottom:3px;font-family:'Inter',sans-serif;}
+.hero-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:16px;color:#fff;margin-bottom:6px;line-height:1.25;}
+.scan-btn{background:#fff;border:none;border-radius:12px;padding:9px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;color:#5A7BFA;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+
+.section-row{display:flex;align-items:center;justify-content:space-between;padding:0 18px;margin-bottom:8px;}
+.section-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#1A2340;}
+.section-link{font-size:11px;color:#5A7BFA;font-weight:600;font-family:'Nunito',sans-serif;}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px;margin-bottom:14px;}
+.stat-card{background:#fff;border:1px solid #E8ECF5;border-radius:14px;padding:12px 13px;}
+.stat-label{font-size:10px;color:#8896B0;font-weight:500;margin-bottom:4px;font-family:'Inter',sans-serif;}
+.stat-num{font-family:'Nunito',sans-serif;font-weight:900;font-size:20px;}
+.stat-sub{font-size:9px;font-weight:600;border-radius:20px;padding:2px 7px;display:inline-block;margin-top:3px;font-family:'Nunito',sans-serif;}
+
+.history-list{padding:0 16px;display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+.hist-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E8ECF5;border-radius:14px;padding:10px 12px;}
+.hist-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.hist-info{flex:1;}
+.hist-name{font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;color:#1A2340;}
+.hist-detail{font-size:10px;color:#8896B0;margin-top:1px;}
+.hist-badge{font-size:9px;font-weight:700;border-radius:20px;padding:3px 8px;font-family:'Nunito',sans-serif;white-space:nowrap;}
+.hist-time{font-size:9px;color:#B0BAD0;text-align:right;margin-top:2px;}
+
+.allergens-scroll{display:flex;gap:8px;padding:0 16px;margin-bottom:16px;overflow-x:auto;}
+.allergens-scroll::-webkit-scrollbar{display:none;}
+.al-chip{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border:1px solid #E8ECF5;border-radius:14px;padding:10px 12px;min-width:62px;}
+.al-chip-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.al-chip-name{font-size:9px;font-weight:700;color:#1A2340;font-family:'Nunito',sans-serif;text-align:center;}
+.al-chip-sev{font-size:8px;font-weight:700;border-radius:20px;padding:1px 5px;font-family:'Nunito',sans-serif;}
+
+.tip-card{margin:0 16px 16px;background:#EAF7F2;border:1px solid #9FE1CB;border-radius:16px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;}
+.tip-icon{width:32px;height:32px;border-radius:10px;background:#9FE1CB;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tip-text{}
+.tip-label{font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:#085041;margin-bottom:2px;}
+.tip-desc{font-size:10px;color:#0F6E56;line-height:1.4;}
+
+.navbar{background:#fff;border-top:1px solid #E8ECF5;padding:10px 8px 14px;display:flex;justify-content:space-around;align-items:center;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 10px;border-radius:12px;}
+.nav-item.active{background:#EEF3FF;}
+.nav-label{font-size:9px;font-weight:700;font-family:'Nunito',sans-serif;}
+.nav-item.active .nav-label{color:#5A7BFA;}
+.nav-item:not(.active) .nav-label{color:#B0BAD0;}
+
+.mascot-mini{width:34px;height:34px;}
+</style>
+
+<div class="scene">
+<h2 class="sr-only">Pantalla de inicio (Home) de SmartAllergen con barra de navegación inferior, tarjeta de escaneo, estadísticas, historial reciente y perfil de alérgenos.</h2>
+
+<div class="phone">
+
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="statusbar-right">
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="none"><rect x="0" y="4" width="3" height="7" rx="1" fill="#8896B0"/><rect x="4" y="2.5" width="3" height="8.5" rx="1" fill="#8896B0"/><rect x="8" y="1" width="3" height="10" rx="1" fill="#8896B0"/><rect x="12" y="0" width="3" height="11" rx="1" fill="#5A7BFA"/></svg>
+      <svg width="15" height="11" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#8896B0"/><rect x="2" y="2" width="14" height="8" rx="2" fill="#5A7BFA"/><path d="M22 4v4a2 2 0 000-4z" fill="#8896B0"/></svg>
+      <span>87%</span>
+    </div>
+  </div>
+
+  <div class="topnav">
+    <div class="topnav-left">
+      <span class="topnav-greeting">Hola de nuevo,</span>
+      <span class="topnav-name">María García</span>
+    </div>
+    <div class="topnav-right">
+      <button class="icon-btn" aria-label="Notificaciones">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5A7BFA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <div class="notif-dot"></div>
+      </button>
+      <div style="width:34px;height:34px;border-radius:10px;background:#EEF3FF;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        <div style="width:34px;height:34px;background:#5A7BFA;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:13px;color:#fff;">MG</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-card">
+    <svg class="hero-card-bg" width="90" height="90" viewBox="0 0 80 88"><path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="white"/></svg>
+    <div class="hero-text">
+      <div class="hero-eyebrow">SmartAllergen · listo para escanear</div>
+      <div class="hero-title">¿Qué vas a<br>comer hoy?</div>
+      <button class="scan-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7BFA" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="6" width="6" height="6" rx="1"/><rect x="16" y="6" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><path d="M16 16h2v2h2v2M20 16h2M16 20v2"/></svg>
+        Escanear etiqueta
+      </button>
+    </div>
+    <svg class="mascot-mini" viewBox="0 0 80 88" style="flex-shrink:0;margin-left:8px;">
+      <path d="M40 8 C40 8 14 32 14 50 C14 67 25 76 40 76 C55 76 66 67 66 50 C66 32 40 8 40 8Z" fill="white" opacity="0.9"/>
+      <circle cx="33" cy="50" r="5" fill="#5A7BFA"/><circle cx="47" cy="50" r="5" fill="#5A7BFA"/>
+      <circle cx="34.5" cy="51" r="2" fill="white"/><circle cx="48.5" cy="51" r="2" fill="white"/>
+      <path d="M34 57 Q40 63 46 57" fill="none" stroke="#5A7BFA" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Escaneos totales</div>
+      <div class="stat-num" style="color:#5A7BFA;">47</div>
+      <div class="stat-sub" style="background:#EEF3FF;color:#185FA5;">este mes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Alertas activas</div>
+      <div class="stat-num" style="color:#E24B4A;">3</div>
+      <div class="stat-sub" style="background:#FEECEC;color:#791F1F;">alérgenos HIGH</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Productos seguros</div>
+      <div class="stat-num" style="color:#24C8A0;">31</div>
+      <div class="stat-sub" style="background:#EAF7F2;color:#085041;">guardados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Peligros evitados</div>
+      <div class="stat-num" style="color:#EF9F27;">12</div>
+      <div class="stat-sub" style="background:#FDF6E3;color:#633806;">esta semana</div>
+    </div>
+  </div>
+
+  <div class="section-row">
+    <span class="section-title">Mis alérgenos</span>
+    <span class="section-link">Editar perfil</span>
+  </div>
+  <div class="allergens-scroll">
+    <div class="al-chip">
+      <div class="al-chip-icon" style="background:#FEECEC;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="2" stroke-linecap="round"><path d="M12 3c-1.5 4-6 6-6 10a6 6 0 0012 0c0-4-4.5-6-6-10z"/></svg>
+      </div>
+      <span class="al-chip-name">Gluten</span>
+      <span class="al-chip-sev" style="background:#F7C1C1;color:#501313;">HIGH</span>
+    </div>
+    <div class="al-chip">
+      <div class="al-chip-icon" style="background:#FEECEC;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="12" rx="8" ry="5"/><path d="M12 7v10M7 9.5C9 11 15 11 17 9.5M7 14.5C9 13 15 13 17 14.5"/></svg>
+      </div>
+      <span class="al-chip-name">Lácteos</span>
+      <span class="al-chip-sev" style="background:#F7C1C1;color:#501313;">HIGH</span>
+    </div>
+    <div class="al-chip">
+      <div class="al-chip-icon" style="background:#FDF6E3;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="2" stroke-linecap="round"><path d="M12 3c0 0-5 4-5 9a5 5 0 0010 0c0-5-5-9-5-9z"/><path d="M9 14c1-1.5 5-1.5 6 0"/></svg>
+      </div>
+      <span class="al-chip-name">Maní</span>
+      <span class="al-chip-sev" style="background:#FAC775;color:#412402;">MED</span>
+    </div>
+    <div class="al-chip">
+      <div class="al-chip-icon" style="background:#FDF6E3;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4"/></svg>
+      </div>
+      <span class="al-chip-name">Huevo</span>
+      <span class="al-chip-sev" style="background:#FAC775;color:#412402;">MED</span>
+    </div>
+    <div class="al-chip" style="border-style:dashed;border-color:#B0BAD0;">
+      <div class="al-chip-icon" style="background:#F0F3FF;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5A7BFA" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <span class="al-chip-name" style="color:#5A7BFA;">Añadir</span>
+    </div>
+  </div>
+
+  <div class="section-row">
+    <span class="section-title">Historial reciente</span>
+    <span class="section-link">Ver todo</span>
+  </div>
+  <div class="history-list">
+    <div class="hist-item">
+      <div class="hist-dot" style="background:#E24B4A;"></div>
+      <div class="hist-info">
+        <div class="hist-name">Galletas Integrales NutriSnack</div>
+        <div class="hist-detail">2 alérgenos HIGH · hace 2h</div>
+      </div>
+      <div>
+        <div class="hist-badge" style="background:#FEECEC;color:#791F1F;">PELIGRO</div>
+      </div>
+    </div>
+    <div class="hist-item">
+      <div class="hist-dot" style="background:#24C8A0;"></div>
+      <div class="hist-info">
+        <div class="hist-name">Avena Natural OatLife</div>
+        <div class="hist-detail">Sin alérgenos · ayer</div>
+      </div>
+      <div>
+        <div class="hist-badge" style="background:#EAF7F2;color:#085041;">SEGURO</div>
+      </div>
+    </div>
+    <div class="hist-item">
+      <div class="hist-dot" style="background:#EF9F27;"></div>
+      <div class="hist-info">
+        <div class="hist-name">Yogur Griego Natural</div>
+        <div class="hist-detail">Lectura parcial · ayer</div>
+      </div>
+      <div>
+        <div class="hist-badge" style="background:#FDF6E3;color:#633806;">PRECAUCIÓN</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-card">
+    <div class="tip-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#085041" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+    </div>
+    <div class="tip-text">
+      <div class="tip-label">Consejo del día</div>
+      <div class="tip-desc">Siempre escanea en espacios bien iluminados para obtener la mejor precisión OCR posible.</div>
+    </div>
+  </div>
+
+  <div class="navbar">
+    <div class="nav-item active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5A7BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">Inicio</span>
+    </div>
+    <div class="nav-item">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="6" height="6" rx="1"/><rect x="16" y="6" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><path d="M16 16h2v2h2v2M20 16h2M16 20v2"/></svg>
+      <span class="nav-label">Escanear</span>
+    </div>
+    <div class="nav-item">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+      <span class="nav-label">Favoritos</span>
+    </div>
+    <div class="nav-item">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span class="nav-label">Historial</span>
+    </div>
+    <div class="nav-item">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B0BAD0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">Perfil</span>
+    </div>
+  </div>
+
+</div>
+</div>

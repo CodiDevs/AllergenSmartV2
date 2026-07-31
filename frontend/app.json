@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "SmartAllergen",
+    "slug": "allergensmart",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/app_icon.png",
+    "scheme": "allergensmart",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/images/app_icon.png"
+    },
+    "android": {
+      "package": "com.allergensmart.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#1A2340",
+        "foregroundImage": "./assets/images/app_icon.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/app_icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1A2340",
+          "image": "./assets/images/app_icon.png",
+          "imageWidth": 200,
+          "android": {
+            "imageWidth": 200
+          }
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SmartAllergen necesita acceso a la cámara para escanear etiquetas de ingredientes y analizar alérgenos.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SmartAllergen necesita acceso a tu galería para analizar fotos de etiquetas de ingredientes.",
+          "cameraPermission": "SmartAllergen necesita acceso a la cámara para escanear etiquetas de ingredientes."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b03e8fed-e753-49a3-a1b4-e5fe0f2e589b"
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+# Entorno virtual y caches
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secretos — NUNCA hornear en la imagen (se inyectan por env en runtime)
+.env
+.env.*
+!.env.example
+
+# Tests y dev
+tests/
+
+# Control de versiones / IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Docs (no necesarias en runtime)
+*.md
