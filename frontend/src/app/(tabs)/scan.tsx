@@ -354,32 +354,50 @@ export default function ScanScreen() {
             </Svg>
           </TouchableOpacity>
 
-          {/* Badge estado — muestra si está buscando barcode, procesando o listo */}
-          <View style={[
-            styles.modeBadge,
-            torchOn && styles.modeBadgeFlash,
-            barcodeLoading && styles.modeBadgeLoading,
-          ]}>
+          {/* Badge estado — permite tocarlo para pausar/reanudar manualmente el barcode */}
+          <TouchableOpacity
+            style={[
+              styles.modeBadge,
+              torchOn && styles.modeBadgeFlash,
+              barcodeLoading && styles.modeBadgeLoading,
+              !barcodeScanning && { backgroundColor: 'rgba(148, 163, 184, 0.35)' },
+            ]}
+            activeOpacity={0.8}
+            onPress={() => setBarcodeScanning((v) => !v)}
+          >
             {barcodeLoading
               ? <ActivityIndicator size="small" color={Colors.warning} style={{ marginRight: 4 }} />
               : <View style={[styles.modeDot, {
-                  backgroundColor: torchOn ? '#FAC775' : barcodeScanning ? '#24C8A0' : '#94A3B8'
+                  backgroundColor: torchOn ? '#FAC775' : barcodeScanning ? '#24C8A0' : '#EF4444'
                 }]} />
             }
             <Text style={[
               styles.modeBadgeText,
               torchOn && { color: '#FAC775' },
               barcodeLoading && { color: Colors.warning },
+              !barcodeScanning && { color: '#F87171' },
             ]}>
               {barcodeLoading
                 ? 'Consultando...'
                 : torchOn
                 ? '⚡ Flash ON'
                 : barcodeScanning
-                ? '🔲 Detectando barcode'
-                : 'Pausado'}
+                ? '🔲 Barcode ON (toca para pausar)'
+                : '⏸️ Barcode Pausado (toca para activar)'}
             </Text>
-          </View>
+          </TouchableOpacity>
+
+          {/* Botón pausas de barcode */}
+          <TouchableOpacity
+            style={[styles.overlayBtn, !barcodeScanning && { backgroundColor: 'rgba(239, 68, 68, 0.4)' }]}
+            onPress={() => setBarcodeScanning((v) => !v)}
+            activeOpacity={0.8}
+            accessibilityLabel="Activar/Desactivar lector de código de barras"
+          >
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+              <Path d="M3 5v14M7 5v14M11 5v14M17 5v14M21 5v14" stroke={barcodeScanning ? '#24C8A0' : '#EF4444'} strokeWidth={2} strokeLinecap="round" />
+            </Svg>
+          </TouchableOpacity>
 
           {/* Botón flash / linterna */}
           <TouchableOpacity

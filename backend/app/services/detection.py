@@ -53,15 +53,15 @@ def _match_in_ingredient(
         if term and term in ingredient:
             return MatchType.DIRECT, 1.0
 
-    # 3. Fuzzy: tolera errores de OCR ('glten' ~ 'gluten')
+    # 3. Fuzzy: tolera errores de OCR ('glten' ~ 'gluten') y variaciones cortas ('agua' ~ 'aqua')
     best = 0.0
     for term in profile.synonyms:
         if not term:
             continue
-        score = fuzz.partial_ratio(term, ingredient)
+        score = max(fuzz.partial_ratio(term, ingredient), fuzz.ratio(term, ingredient))
         if score > best:
             best = score
-    if best >= FUZZY_THRESHOLD:
+    if best >= FUZZY_THRESHOLD or (best >= 75 and len(ingredient) <= 6):
         return MatchType.FUZZY, best / 100.0
 
     return None

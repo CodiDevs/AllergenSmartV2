@@ -56,3 +56,6 @@ supabase/.temp/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# === Entregables del Examen Final ===
+reporte_individual_puce.md

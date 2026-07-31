@@ -93,10 +93,10 @@ export default function HistoryTab() {
           time: scannedDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
           date: dateLabel,
           dateRaw: scannedDate,
-          status: mapAlertLevelToStatus(item.alert_level),
-          confidence: Math.round(item.confidence * 100),
-          allergens: item.allergens_found,
-          rawIngredients: item.raw_ingredients,
+          status: mapAlertLevelToStatus((item.result_status || item.alert_level || 'safe') as any),
+          confidence: item.confidence ? Math.round(item.confidence * 100) : 100,
+          allergens: item.allergens_found || [],
+          rawIngredients: item.raw_ingredients || '',
         };
       });
 
@@ -112,17 +112,18 @@ export default function HistoryTab() {
 
   // Filter logic
   const filteredHistory = history.filter((item) => {
+    const st = (item.status || '').toLowerCase();
     if (filter === 'Todo') return true;
-    if (filter === 'Peligros') return item.status === 'danger';
-    if (filter === 'Precaución') return item.status === 'warning';
-    if (filter === 'Seguros') return item.status === 'safe';
+    if (filter === 'Peligros') return st === 'danger';
+    if (filter === 'Precaución') return st === 'warning';
+    if (filter === 'Seguros') return st === 'safe';
     return true;
   });
 
   // Calculate statistics from whole history
-  const dangerCount = history.filter(h => h.status === 'danger').length;
-  const warningCount = history.filter(h => h.status === 'warning').length;
-  const safeCount = history.filter(h => h.status === 'safe').length;
+  const dangerCount = history.filter(h => (h.status || '').toLowerCase() === 'danger').length;
+  const warningCount = history.filter(h => (h.status || '').toLowerCase() === 'warning').length;
+  const safeCount = history.filter(h => (h.status || '').toLowerCase() === 'safe').length;
 
   // Group by Date ('Hoy' and 'Ayer' etc)
   const groupedItems: { [key: string]: HistoryItem[] } = {};

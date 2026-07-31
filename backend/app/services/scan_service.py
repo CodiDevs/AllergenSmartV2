@@ -46,14 +46,66 @@ class ScanService:
         """Ejecuta el flujo completo de escaneo y devuelve el resultado."""
         start = time.perf_counter()
 
-        # 1. Alergias del usuario → perfiles normalizados para detección
-        user_allergies = await self.users.get_user_allergies(user_id)
+        COMMON_SYNONYMS = {
+            "agua": ["agua", "aqua", "water", "eau", "purified water"],
+            "aqua": ["agua", "aqua", "water", "eau", "purified water"],
+            "water": ["agua", "aqua", "water", "eau", "purified water"],
+            "aspartamo": ["aspartamo", "aspartame", "e951", "e-951"],
+            "aspartame": ["aspartamo", "aspartame", "e951", "e-951"],
+            "aluminio": ["aluminio", "aluminum", "aluminium"],
+            "aluminum": ["aluminio", "aluminum", "aluminium"],
+            "aluminium": ["aluminio", "aluminum", "aluminium"],
+            "azucar": ["azucar", "sugar", "sucre"],
+            "sugar": ["azucar", "sugar", "sucre"],
+            "leche": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+            "milk": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+            "lactosa": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+            "lactose": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+            "gluten": ["gluten", "trigo", "wheat", "cebada", "barley", "centeno", "rye"],
+            "wheat": ["gluten", "trigo", "wheat"],
+            "trigo": ["gluten", "trigo", "wheat"],
+            "mani": ["mani", "cacahuate", "peanut", "peanuts"],
+            "peanut": ["mani", "cacahuate", "peanut", "peanuts"],
+            "soja": ["soja", "soya", "soy", "soybean"],
+            "soya": ["soja", "soya", "soy", "soybean"],
+            "soy": ["soja", "soya", "soy", "soybean"],
+            "huevo": ["huevo", "huevos", "egg", "eggs", "albúmina", "albumin"],
+            "egg": ["huevo", "huevos", "egg", "eggs"],
+            "tartrazina": ["tartrazina", "tartrazine", "e102", "e-102", "yellow 5"],
+            "tartrazine": ["tartrazina", "tartrazine", "e102", "e-102", "yellow 5"],
+            "glutamato": ["glutamato", "glutamate", "msg", "e621", "e-621"],
+            "glutamate": ["glutamato", "glutamate", "msg", "e621", "e-621"],
+            "sulfitos": ["sulfitos", "sulfites", "sulfite", "e220", "e221", "e222", "e223", "e224", "e225", "e226", "e227", "e228"],
+            "sulfites": ["sulfitos", "sulfites", "sulfite", "e220"],
+            "mariscos": ["mariscos", "shellfish", "crustacean", "crustaceos", "camaron", "shrimp", "prawns"],
+            "shellfish": ["mariscos", "shellfish", "crustacean", "crustaceos", "camaron", "shrimp"],
+            "pescado": ["pescado", "fish", "poisson"],
+            "fish": ["pescado", "fish", "poisson"],
+            "sesamo": ["sesamo", "sesame", "ajonjoli", "ajonjolí"],
+            "sesame": ["sesamo", "sesame", "ajonjoli", "ajonjolí"],
+            "ajonjoli": ["sesamo", "sesame", "ajonjoli", "ajonjolí"],
+            "nuez": ["nuez", "nueces", "nut", "nuts", "walnut", "tree nuts"],
+            "nuts": ["nuez", "nueces", "nut", "nuts", "walnut", "tree nuts"],
+            "almendra": ["almendra", "almendras", "almond", "almonds"],
+            "almond": ["almendra", "almendras", "almond", "almonds"],
+            "mostaza": ["mostaza", "mustard"],
+            "mustard": ["mostaza", "mustard"],
+            "apio": ["apio", "celery"],
+            "celery": ["apio", "celery"],
+        }
+
+        def _expand(name: str, raw_syns: list[str]) -> list[str]:
+            res = set([normalize(name)] + [normalize(s) for s in raw_syns if s])
+            for s in list(res):
+                if s in COMMON_SYNONYMS:
+                    res.update([normalize(x) for x in COMMON_SYNONYMS[s]])
+            return list(res)
+
         profiles = [
             UserAllergenProfile(
                 name=ua.allergen.name,
                 severity=_severity(ua.severity),
-                synonyms=[normalize(ua.allergen.name)]
-                + [normalize(s) for s in (ua.allergen.synonyms or [])],
+                synonyms=_expand(ua.allergen.name, ua.allergen.synonyms or []),
                 ocr_variants=[normalize(v) for v in (ua.allergen.ocr_variants or [])],
             )
             for ua in user_allergies

@@ -142,12 +142,13 @@ export interface UserAllergyEntry {
  */
 export interface ScanHistoryItem {
   id: string;
-  product_name: string;
-  brand: string | null;
-  alert_level: AlertLevel;
+  product_name?: string;
+  brand?: string | null;
+  alert_level?: AlertLevel;
+  result_status?: AlertLevel;
   allergens_found: string[];
-  raw_ingredients: string;
-  confidence: number;
+  raw_ingredients?: string;
+  confidence?: number;
   scanned_at: string; // ISO date string
 }
 

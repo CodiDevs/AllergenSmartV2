@@ -113,13 +113,73 @@ class UserService:
                 result = await self.session.execute(stmt)
                 existing = result.scalar_one_or_none()
                 
+                # Diccionario de equivalencias y traducciones comunes (ES / EN / LAT)
+                COMMON_SYNONYMS = {
+                    "agua": ["agua", "aqua", "water", "eau", "purified water"],
+                    "aqua": ["agua", "aqua", "water", "eau", "purified water"],
+                    "water": ["agua", "aqua", "water", "eau", "purified water"],
+                    "aspartamo": ["aspartamo", "aspartame", "e951", "e-951"],
+                    "aspartame": ["aspartamo", "aspartame", "e951", "e-951"],
+                    "aluminio": ["aluminio", "aluminum", "aluminium"],
+                    "aluminum": ["aluminio", "aluminum", "aluminium"],
+                    "aluminium": ["aluminio", "aluminum", "aluminium"],
+                    "azucar": ["azucar", "sugar", "sucre"],
+                    "sugar": ["azucar", "sugar", "sucre"],
+                    "leche": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+                    "milk": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+                    "lactosa": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+                    "lactose": ["leche", "milk", "lait", "lacteos", "dairy", "lactosa", "lactose"],
+                    "gluten": ["gluten", "trigo", "wheat", "cebada", "barley", "centeno", "rye"],
+                    "wheat": ["gluten", "trigo", "wheat"],
+                    "trigo": ["gluten", "trigo", "wheat"],
+                    "mani": ["mani", "cacahuate", "peanut", "peanuts"],
+                    "peanut": ["mani", "cacahuate", "peanut", "peanuts"],
+                    "soja": ["soja", "soya", "soy", "soybean"],
+                    "soya": ["soja", "soya", "soy", "soybean"],
+                    "soy": ["soja", "soya", "soy", "soybean"],
+                    "huevo": ["huevo", "huevos", "egg", "eggs", "albúmina", "albumin"],
+                    "egg": ["huevo", "huevos", "egg", "eggs"],
+                    "tartrazina": ["tartrazina", "tartrazine", "e102", "e-102", "yellow 5"],
+                    "tartrazine": ["tartrazina", "tartrazine", "e102", "e-102", "yellow 5"],
+                    "glutamato": ["glutamato", "glutamate", "msg", "e621", "e-621"],
+                    "glutamate": ["glutamato", "glutamate", "msg", "e621", "e-621"],
+                    "sulfitos": ["sulfitos", "sulfites", "sulfite", "e220", "e221", "e222", "e223", "e224", "e225", "e226", "e227", "e228"],
+                    "sulfites": ["sulfitos", "sulfites", "sulfite", "e220"],
+                    "mariscos": ["mariscos", "shellfish", "crustacean", "crustaceos", "camaron", "shrimp", "prawns"],
+                    "shellfish": ["mariscos", "shellfish", "crustacean", "crustaceos", "camaron", "shrimp"],
+                    "pescado": ["pescado", "fish", "poisson"],
+                    "fish": ["pescado", "fish", "poisson"],
+                    "sesamo": ["sesamo", "sesame", "ajonjoli", "ajonjolí"],
+                    "sesame": ["sesamo", "sesame", "ajonjoli", "ajonjolí"],
+                    "ajonjoli": ["sesamo", "sesame", "ajonjoli", "ajonjolí"],
+                    "nuez": ["nuez", "nueces", "nut", "nuts", "walnut", "tree nuts"],
+                    "nuts": ["nuez", "nueces", "nut", "nuts", "walnut", "tree nuts"],
+                    "almendra": ["almendra", "almendras", "almond", "almonds"],
+                    "almond": ["almendra", "almendras", "almond", "almonds"],
+                    "mostaza": ["mostaza", "mustard"],
+                    "mustard": ["mostaza", "mustard"],
+                    "apio": ["apio", "celery"],
+                    "celery": ["apio", "celery"],
+                }
+
+                term_key = clean_name.lower()
+                computed_synonyms = COMMON_SYNONYMS.get(term_key, [term_key])
+                if term_key not in computed_synonyms:
+                    computed_synonyms.append(term_key)
+
                 if existing:
+                    # Actualizar sinónimos si no los tenía completos
+                    existing_syns = set(existing.synonyms or [])
+                    existing_syns.update(computed_synonyms)
+                    existing.synonyms = list(existing_syns)
+                    self.session.add(existing)
+                    await self.session.flush()
                     allergen_uuid = existing.id
                 else:
-                    # Crear alérgeno personalizado
+                    # Crear alérgeno personalizado con sinónimos enriquecidos
                     new_allergen = Allergen(
                         name=clean_name.capitalize(),
-                        synonyms=[clean_name.lower()],
+                        synonyms=computed_synonyms,
                         ocr_variants=[],
                     )
                     self.session.add(new_allergen)
