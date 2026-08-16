@@ -99,6 +99,75 @@ export default function ScanScreen() {
     }
   }, [mode]);
 
+  // ─── Helper: procesar y comprimir imagen a base64 limpio ───────────────────
+  const processImageToBase64 = useCallback(async (item: { base64?: string | null; uri?: string }): Promise<string> => {
+    // Si estamos en navegador Web, redimensionamos con Canvas HTML5 para optimizar tamaño (1200px max, 0.8 JPEG)
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      let src = item.uri;
+      if (!src && item.base64) {
+        src = item.base64.startsWith('data:') ? item.base64 : `data:image/jpeg;base64,${item.base64}`;
+      }
+      if (src) {
+        return new Promise<string>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const maxDim = 1200;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, w, h);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+              resolve(dataUrl.split(',')[1]);
+            } else {
+              resolve(item.base64 || (src!.startsWith('data:') ? src!.split(',')[1] : ''));
+            }
+          };
+          img.onerror = () => {
+            resolve(item.base64 || (src!.startsWith('data:') ? src!.split(',')[1] : ''));
+          };
+          img.src = src!;
+        });
+      }
+    }
+
+    if (item.base64) {
+      return item.base64.startsWith('data:') ? item.base64.split(',')[1] : item.base64;
+    }
+
+    if (item.uri) {
+      if (item.uri.startsWith('data:')) {
+        return item.uri.split(',')[1];
+      }
+      const res = await fetch(item.uri);
+      const blob = await res.blob();
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          resolve(dataUrl.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    throw new Error('No se pudo procesar la imagen');
+  }, []);
+
   // ─── Tomar foto ────────────────────────────────────────────────────────────
   const handleTakePhoto = useCallback(async () => {
     if (!cameraRef.current || capturing) return;
@@ -123,24 +192,7 @@ export default function ScanScreen() {
         skipProcessing: false,
       });
 
-      let base64Str = photo?.base64;
-      if (!base64Str && photo?.uri) {
-        if (photo.uri.startsWith('data:')) {
-          base64Str = photo.uri.split(',')[1];
-        } else if (Platform.OS === 'web' || photo.uri.startsWith('blob:')) {
-          const res = await fetch(photo.uri);
-          const blob = await res.blob();
-          base64Str = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const dataUrl = reader.result as string;
-              resolve(dataUrl.split(',')[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        }
-      }
+      const base64Str = await processImageToBase64(photo);
 
       if (!base64Str) {
         Alert.alert('Error', 'No se pudo capturar la imagen. Inténtalo de nuevo.');
@@ -158,7 +210,7 @@ export default function ScanScreen() {
     } finally {
       setCapturing(false);
     }
-  }, [capturing, cameraPermission]);
+  }, [capturing, cameraPermission, processImageToBase64]);
 
   // ─── Galería ───────────────────────────────────────────────────────────────
   const handleOpenGallery = useCallback(async () => {
@@ -180,38 +232,24 @@ export default function ScanScreen() {
     });
 
     if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-    let base64Str = asset.base64;
-    if (!base64Str && asset.uri) {
-      if (asset.uri.startsWith('data:')) {
-        base64Str = asset.uri.split(',')[1];
-      } else if (Platform.OS === 'web' || asset.uri.startsWith('blob:') || asset.uri.startsWith('http')) {
-        const res = await fetch(asset.uri);
-        const blob = await res.blob();
-        base64Str = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-            resolve(dataUrl.split(',')[1]);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
+
+    try {
+      const base64Str = await processImageToBase64(result.assets[0]);
+      if (!base64Str) {
+        Alert.alert('Error', 'No se pudo procesar la imagen seleccionada.');
+        return;
       }
-    }
 
-    if (!base64Str) {
-      Alert.alert('Error', 'No se pudo procesar la imagen seleccionada.');
-      return;
+      setTorchOn(false);
+      setPendingScan({
+        scanSource: 'camera',
+        imageBase64: base64Str,
+      });
+      router.push('/processing');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'No se pudo cargar la imagen seleccionada.');
     }
-
-    setTorchOn(false);
-    setPendingScan({
-      scanSource: 'camera',
-      imageBase64: base64Str,
-    });
-    router.push('/processing');
-  }, []);
+  }, [processImageToBase64]);
 
   // ─── Búsqueda manual de productos (Autocomplete) ──────────────────────────
   const handleProductNameChange = (text: string) => {
