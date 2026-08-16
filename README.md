@@ -178,13 +178,29 @@ El script estructurado de creación de tablas, índices, triggers y semillas se 
 
 ---
 
-## 4. Metodología de Desarrollo
+## 4. Metodología de Desarrollo: Kanban (Flujo Continuo)
 
-El desarrollo se gestionó de forma ágil bajo el marco de trabajo **Scrum/Kanban** utilizando **Linear** para el seguimiento y priorización de tickets organizados en hitos y épicas de desarrollo:
+El desarrollo del proyecto se gestionó bajo la metodología ágil **Kanban**, enfocada en la visualización del flujo de trabajo, la entrega continua de valor y la minimización del trabajo en progreso (WIP). La herramienta principal para el seguimiento de tareas fue **Linear** (alternativa moderna e integrada a Jira).
 
-- **Épica: Detección y Análisis de Productos:** Concentró la lógica de OCR, escaneo y cruce de datos.
-- **Épica: Perfil, Historial y Favoritos:** Enfocada en la gestión de alérgenos personales y persistencia.
-- **Épica: UX y Diseño:** Creación del logo "Alergi", paleta de colores corporativa y fluidez visual.
+### 4.1 Principios Kanban Aplicados
+- **Visualización del Trabajo:** Cada característica, bug o tarea de infraestructura se representó mediante una tarjeta individual indexada (ej: `JOH-58`, `JOH-59`, `JOH-42`).
+- **Límite de Trabajo en Progreso (WIP Limits):** Se estableció un límite de máximo 2 tareas simultáneas en la columna *In Progress* para evitar cuellos de botella y garantizar la conclusión rápida de tareas antes de abrir nuevas.
+- **Gestión del Flujo Continuo:** El software evolucionó de forma incremental y constante sin depender de entregas al final de sprints rígidos, permitiendo integrar requerimientos rápidamente.
+
+### 4.2 Estructura del Tablero Kanban (Linear)
+El tablero de control del proyecto se organizó en 5 estados o columnas secuenciales:
+
+1. **Backlog (Por Hacer):** Listado global de historias de usuario y tareas técnicas priorizadas.
+2. **Todo (Seleccionadas):** Tareas aprobadas y preparadas para su ejecución inmediata.
+3. **In Progress (En Desarrollo):** Tareas activas en codificación y construcción.
+4. **In Review (En Revisión / QA):** Código en proceso de validación, pruebas funcionales e integración.
+5. **Done (Completado):** Funcionalidades terminadas, probadas y desplegadas en el sistema.
+
+### 4.3 Organización por Épicas
+Toda la lista de trabajo en Kanban se agrupó en 3 épicas principales:
+- **Épica 1: Detección y Análisis de Productos (Core Engine):** Integración con Google Cloud Vision API (OCR), motor de normalización, coincidencia difusa (*Fuzzy Matching*) y lectura de códigos de barras.
+- **Épica 2: Perfil, Historial y Favoritos:** Gestión del perfil de usuario, sincronización de restricciones personales con Supabase, historial de escaneos y persistencia local (Zustand).
+- **Épica 3: UX, Calidad y Seguridad:** Identidad visual de la mascota "Alergi", pantallas de términos/privacidad, animaciones interactivas y borrado de cuenta en cascada.
 
 ---
 
@@ -267,3 +283,128 @@ El desarrollo se gestionó de forma ágil bajo el marco de trabajo **Scrum/Kanba
         ├── components/       # Componentes de UI Reutilizables
         └── store/            # Gestión de estado global (Zustand)
 ```
+
+## 7. Anexos: Documentaci�n Visual (UML)
+
+### 7.1 Diagrama de Casos de Uso
+Muestra la interacci�n de los actores principales con el sistema.
+
+`mermaid
+graph TD
+    %% Actores
+    Usuario([Usuario])
+    Admin([Administrador])
+    Vision[API Google Cloud Vision]
+    OFF[API Open Food Facts]
+
+    %% Casos de Uso
+    subgraph AllergenSmart V2
+        UC1(Registrarse e Iniciar Sesi�n)
+        UC2(Configurar Perfil de Alergias)
+        UC3(Escanear C�digo de Barras)
+        UC4(Fotografiar Etiqueta de Ingredientes)
+        UC5(An�lisis Manual de Texto)
+        UC6(Ver Historial de Escaneos)
+        UC7(Gestionar Cat�logo de Al�rgenos)
+    end
+
+    %% Relaciones
+    Usuario --> UC1
+    Usuario --> UC2
+    Usuario --> UC3
+    Usuario --> UC4
+    Usuario --> UC5
+    Usuario --> UC6
+
+    Admin --> UC7
+
+    UC4 -->|Extrae texto| Vision
+    UC3 -->|Consulta producto| OFF
+`
+
+### 7.2 Diagrama de Secuencia (Flujo Cr�tico de Escaneo)
+Representa el proceso paso a paso desde que el usuario toma una foto hasta que recibe la alerta.
+
+`mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant App as App M�vil (React Native)
+    participant API as Backend (FastAPI)
+    participant DB as Supabase (PostgreSQL)
+    participant OCR as Google Cloud Vision
+
+    U->>App: Toma foto de los ingredientes
+    App->>App: Comprime imagen a JPEG base64 (max 1200px)
+    App->>API: POST /api/v1/scan (Token JWT + Imagen)
+    API->>DB: Obtener alergias del perfil del usuario
+    DB-->>API: Retorna perfil (ej. Al�rgico a L�cteos y Man�)
+    API->>OCR: Enviar imagen para extracci�n de texto
+    OCR-->>API: Retorna texto extra�do (ej. 'Leche, harina')
+    API->>API: Normalizar texto y ejecutar Fuzzy Matching
+    API->>API: Calcular Nivel de Alerta (Seguro / Precauci�n / Peligro)
+    API->>DB: INSERT scan_history (Guardar historial)
+    DB-->>API: OK (200)
+    API-->>App: Retorna ScanResponse (Estado de Alerta + Ingredientes)
+    App-->>U: Muestra Sem�foro Visual (Rojo/Amarillo/Verde)
+`
+
+### 7.3 Diagrama de Clases (Componentes del Backend)
+Modelado simplificado de los servicios principales de la arquitectura limpia en FastAPI.
+
+`mermaid
+classDiagram
+    class ScanService {
+        +db: AsyncSession
+        +process_scan(user_id: UUID, req: ScanRequest): ScanResponse
+        -compute_alert_level(detected_allergens): str
+    }
+    class CacheService {
+        +db: AsyncSession
+        +resolve_scan(req: ScanRequest): CacheResult
+        -check_l1_products(): Product
+        -check_l2_ocr_cache(): OCRResult
+        -call_l3_vision(): OCRResult
+    }
+    class VisionClient {
+        +extract_text(image_bytes: bytes): OCRResult
+    }
+    class FuzzyMatcher {
+        +find_matches(text: str, allergens: List): List
+        -normalize_text(text: str): str
+    }
+    class ScanHistory {
+        +id: UUID
+        +user_id: UUID
+        +result_status: str
+        +detected_allergens: JSONB
+        +save()
+    }
+
+    ScanService --> CacheService : usa para obtener texto
+    CacheService --> VisionClient : fallback si no hay cach�
+    ScanService --> FuzzyMatcher : delega b�squeda de al�rgenos
+    ScanService --> ScanHistory : persiste resultado
+`
+
+### 7.4 Diagrama de Actividad (Flujo de Procesamiento)
+Describe el �rbol de decisiones interno cuando entra una solicitud de an�lisis.
+
+`mermaid
+stateDiagram-v2
+    [*] --> RecibirSolicitud
+    RecibirSolicitud --> ValidarCampos
+    ValidarCampos --> EsModoManual?
+    EsModoManual? --> |S�| EjecutarFuzzyMatching : Tiene texto manual
+    EsModoManual? --> |No| BuscarEnCacheL1L2
+    
+    BuscarEnCacheL1L2 --> ExisteCach�?
+    ExisteCach�? --> |S�| EjecutarFuzzyMatching
+    ExisteCach�? --> |No| ExtraerOCR
+    
+    ExtraerOCR --> EjecutarFuzzyMatching : API Vision
+    
+    EjecutarFuzzyMatching --> CalcularSeveridad
+    CalcularSeveridad --> GuardarHistorial
+    GuardarHistorial --> [*] : Retornar Resultado a App
+`
+
