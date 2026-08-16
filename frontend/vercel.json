@@ -2,5 +2,16 @@
   "buildCommand": "npm run build:web",
   "installCommand": "npm install",
   "outputDirectory": "dist",
-  "framework": "create-react-app"
+  "framework": "create-react-app",
+  "headers": [
+    {
+      "source": "/_expo/static/js/web/(.*)\\.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/((?!_expo|favicon\\.ico|metadata\\.json).*)", "destination": "/index.html" }
+  ]
 }
