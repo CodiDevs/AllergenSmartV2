@@ -12,7 +12,7 @@ class ScanRequest(BaseModel):
     """Request del frontend para escanear una etiqueta."""
     image_base64: str = Field(
         ...,
-        min_length=100,
+        min_length=1,
         # 10 MB de imagen ≈ 13.4 MB en base64; 14_000_000 deja margen para el prefijo data URI.
         # Cota el tamaño del body ANTES de decodificar (evita cargar payloads gigantes en memoria).
         max_length=14_000_000,

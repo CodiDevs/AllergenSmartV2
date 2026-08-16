@@ -268,13 +268,14 @@ async function apiFetch<T>(
       },
     });
   } catch (error: any) {
+    console.error('apiFetch Network/TypeError:', path, error);
     if (error instanceof TypeError) {
       if (
         error.message?.includes('Network request failed') ||
         error.message?.includes('Load failed') ||
         error.message?.includes('Failed to fetch')
       ) {
-        throw new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+        throw new Error(`Error de conexión (${error.message || 'sin respuesta'}). Verifica el servidor.`);
       }
     }
     throw error;
@@ -291,14 +292,19 @@ async function apiFetch<T>(
     let actionRequired: string | undefined;
     try {
       const errorBody = await response.json();
-      // El backend puede retornar { error_code, message, action_required }
-      // o { detail: { error_code, message, action_required } }
+      console.error('apiFetch error body:', path, response.status, errorBody);
       const detail = errorBody.detail ?? errorBody;
-      errorMessage = detail.message || errorBody.message || errorMessage;
-      errorCode = detail.error_code || errorBody.error_code;
-      actionRequired = detail.action_required || errorBody.action_required;
-    } catch {
-      // ignorar error de parseo
+      if (typeof detail === 'string') {
+        errorMessage = detail;
+      } else if (Array.isArray(detail)) {
+        errorMessage = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+      } else if (typeof detail === 'object' && detail !== null) {
+        errorMessage = detail.message || errorBody.message || JSON.stringify(detail);
+        errorCode = detail.error_code || errorBody.error_code;
+        actionRequired = detail.action_required || errorBody.action_required;
+      }
+    } catch (e) {
+      console.error('apiFetch error parse json failed:', e);
     }
     const err: any = new Error(errorMessage);
     err.errorCode = errorCode;
