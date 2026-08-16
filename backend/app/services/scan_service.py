@@ -46,6 +46,9 @@ class ScanService:
         """Ejecuta el flujo completo de escaneo y devuelve el resultado."""
         start = time.perf_counter()
 
+        # 1. Cargar alergias del usuario desde la BD
+        user_allergies = await self.users.get_user_allergies(user_id)
+
         COMMON_SYNONYMS = {
             "agua": ["agua", "aqua", "water", "eau", "purified water"],
             "aqua": ["agua", "aqua", "water", "eau", "purified water"],
