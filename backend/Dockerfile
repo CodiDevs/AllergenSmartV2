@@ -1,31 +1,23 @@
-# =====================================================================
-# AllergenSmart API — imagen de producción
-# Base mínima, usuario no-root (SECURITY_GUIDELINES → Docker).
-# =====================================================================
-FROM python:3.12-slim AS base
+# Usa la imagen oficial ligera de Python
+FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
-
+# Establecer el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Usuario sin privilegios
-RUN useradd --create-home --uid 1000 appuser
+# Instalar dependencias del sistema requeridas (por ejemplo, para compilar paquetes)
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-# Dependencias primero (mejor cache de capas)
+# Copiar el archivo de requerimientos
 COPY requirements.txt .
+
+# Instalar las dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Código de la app + migraciones + scripts (seed)
-COPY app ./app
-COPY alembic ./alembic
-COPY alembic.ini .
-COPY scripts ./scripts
+# Copiar todo el código de la aplicación
+COPY . .
 
-USER appuser
-
+# Exponer el puerto que Render asignará dinámicamente
 EXPOSE 8000
 
-# Respeta $PORT si el entorno lo define; en local cae a 8000.
+# Comando para ejecutar la aplicación (Render inyecta la variable $PORT)
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
