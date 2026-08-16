@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   paragraphBold: {
-    fontFamily: FontFamily.interBold,
+    fontFamily: FontFamily.interSemiBold,
     fontSize: 14,
     color: Colors.danger,
     lineHeight: 22,

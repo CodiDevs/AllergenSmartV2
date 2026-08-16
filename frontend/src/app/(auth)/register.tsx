@@ -370,7 +370,7 @@ export default function RegisterScreen() {
             variant="green"
             onPress={handleRegister}
             loading={loading}
-            style={[styles.continueButton, !allPassed && password.length > 0 && { opacity: 0.5 }]}
+            style={StyleSheet.flatten([styles.continueButton, (!allPassed && password.length > 0) ? { opacity: 0.5 } : undefined])}
           />
 
           {/* Footer */}
