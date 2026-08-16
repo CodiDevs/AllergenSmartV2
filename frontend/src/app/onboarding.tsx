@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/ui/symbol-view';
 import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '@/store/appStore';
