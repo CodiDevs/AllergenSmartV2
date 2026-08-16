@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     google_cloud_api_key: str = ""
 
     # === Rate Limiting ===
-    rate_limit_per_minute: int = 10
+    rate_limit_per_minute: int = 60
 
     # === Monitoring ===
     # Sentry inactivo hasta producción (su init en main.py está comentado).

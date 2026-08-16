@@ -123,7 +123,26 @@ export default function ScanScreen() {
         skipProcessing: false,
       });
 
-      if (!photo?.base64) {
+      let base64Str = photo?.base64;
+      if (!base64Str && photo?.uri) {
+        if (photo.uri.startsWith('data:')) {
+          base64Str = photo.uri.split(',')[1];
+        } else if (Platform.OS === 'web' || photo.uri.startsWith('blob:')) {
+          const res = await fetch(photo.uri);
+          const blob = await res.blob();
+          base64Str = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const dataUrl = reader.result as string;
+              resolve(dataUrl.split(',')[1]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+
+      if (!base64Str) {
         Alert.alert('Error', 'No se pudo capturar la imagen. Inténtalo de nuevo.');
         return;
       }
@@ -131,7 +150,7 @@ export default function ScanScreen() {
       setTorchOn(false); // Apagar linterna antes de navegar
       setPendingScan({
         scanSource: 'camera',
-        imageBase64: photo.base64,
+        imageBase64: base64Str,
       });
       router.push('/processing');
     } catch (err: any) {
@@ -160,12 +179,36 @@ export default function ScanScreen() {
       allowsMultipleSelection: false,
     });
 
-    if (result.canceled || !result.assets?.[0]?.base64) return;
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    let base64Str = asset.base64;
+    if (!base64Str && asset.uri) {
+      if (asset.uri.startsWith('data:')) {
+        base64Str = asset.uri.split(',')[1];
+      } else if (Platform.OS === 'web' || asset.uri.startsWith('blob:') || asset.uri.startsWith('http')) {
+        const res = await fetch(asset.uri);
+        const blob = await res.blob();
+        base64Str = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            resolve(dataUrl.split(',')[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+    }
+
+    if (!base64Str) {
+      Alert.alert('Error', 'No se pudo procesar la imagen seleccionada.');
+      return;
+    }
 
     setTorchOn(false);
     setPendingScan({
       scanSource: 'camera',
-      imageBase64: result.assets[0].base64!,
+      imageBase64: base64Str,
     });
     router.push('/processing');
   }, []);
