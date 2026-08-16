@@ -267,9 +267,15 @@ async function apiFetch<T>(
         ...(options.headers as Record<string, string> | undefined),
       },
     });
-  } catch (error) {
-    if (error instanceof TypeError && error.message.includes('Network request failed')) {
-      throw new Error('No hay conexión a internet. Verifica tu red e intenta de nuevo.');
+  } catch (error: any) {
+    if (error instanceof TypeError) {
+      if (
+        error.message?.includes('Network request failed') ||
+        error.message?.includes('Load failed') ||
+        error.message?.includes('Failed to fetch')
+      ) {
+        throw new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+      }
     }
     throw error;
   }
