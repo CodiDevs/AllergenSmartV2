@@ -66,7 +66,17 @@ const WorkletsModule = {
   runOnUI: (fn) => fn,
   runOnJS: (fn) => fn,
   scheduleOnUI: (fn) => fn,
+  // Reanimated v4 usa este método para sincronizar animaciones en web
+  _getAnimationTimestamp: () => performance.now(),
+  getAnimationTimestamp: () => performance.now(),
 };
+
+// Reanimated también lo inyecta como global
+if (typeof globalThis !== 'undefined') {
+  if (!globalThis._getAnimationTimestamp) {
+    globalThis._getAnimationTimestamp = () => performance.now();
+  }
+}
 
 module.exports = {
   // deprecated
