@@ -69,9 +69,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading) return;
 
-    // Check if the user is currently inside the (auth) directory
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
+    const atRoot = !segments.length;
 
     // 1. Mostrar Onboarding primero si no lo ha visto
     if (!hasSeenOnboarding) {
@@ -82,16 +82,20 @@ export default function RootLayout() {
     }
 
     // 2. Si ya vio el onboarding, manejar sesión
-    if (!session && !inAuthGroup && !inOnboarding) {
-      router.replace('/(auth)/login');
-    } else if (session && (inAuthGroup || inOnboarding)) {
-      router.replace('/(tabs)');
+    if (!session) {
+      if (!inAuthGroup) {
+        router.replace('/(auth)/login');
+      }
+    } else {
+      if (inAuthGroup || inOnboarding || atRoot) {
+        router.replace('/(tabs)');
 
-      const { notifications, generateWelcomeNotification } = useNotificationStore.getState();
-      const hasWelcome = notifications.some((n) => n.type === 'welcome');
-      if (!hasWelcome) {
-        const name = session.user?.user_metadata?.full_name || 'usuario';
-        generateWelcomeNotification(name);
+        const { notifications, generateWelcomeNotification } = useNotificationStore.getState();
+        const hasWelcome = notifications.some((n) => n.type === 'welcome');
+        if (!hasWelcome) {
+          const name = session.user?.user_metadata?.full_name || 'usuario';
+          generateWelcomeNotification(name);
+        }
       }
     }
   }, [session, loading, segments, hasSeenOnboarding]);
