@@ -22,9 +22,8 @@ router = APIRouter(prefix="/scan", tags=["Escaneo"])
     summary="Escanear etiqueta de alimento",
     description="Endpoint principal. Recibe imagen en base64, realiza OCR y detecta alérgenos según el perfil del usuario.",
 )
-@limiter.limit("10/minute")
 async def scan_label(
-    request: Request,  # Requerido por slowapi para rate limiting
+    request: Request,
     body: ScanRequest,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),

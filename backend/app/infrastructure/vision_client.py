@@ -29,7 +29,7 @@ _TIMEOUT = httpx.Timeout(20.0)
 
 # Firmas → MIME, para inferir el tipo de una imagen base64 sin content-type.
 _SIGNATURES: list[tuple[bytes, str]] = [
-    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"\xff\xd8", "image/jpeg"),
     (b"\x89PNG\r\n\x1a\n", "image/png"),
     (b"RIFF", "image/webp"),  # 'WEBP' en offset 8
 ]
@@ -45,10 +45,15 @@ def _strip_data_uri(image_base64: str) -> str:
 
 def _decode_and_validate(image_base64: str) -> bytes:
     """Decodifica base64 y valida firma, MIME y tamaño. Lanza si no pasa."""
-    raw = _strip_data_uri(image_base64)
+    raw = _strip_data_uri(image_base64).strip()
+    raw = raw.replace("\n", "").replace("\r", "").replace(" ", "").replace("-", "+").replace("_", "/")
+    missing_padding = len(raw) % 4
+    if missing_padding:
+        raw += "=" * (4 - missing_padding)
+
     try:
-        image_bytes = base64.b64decode(raw, validate=True)
-    except (binascii.Error, ValueError):
+        image_bytes = base64.b64decode(raw)
+    except Exception:
         raise InvalidImageException(reason="base64 inválido")
 
     if len(image_bytes) > MAX_FILE_BYTES:

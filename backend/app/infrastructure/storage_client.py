@@ -16,8 +16,8 @@ MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 # Firmas (magic numbers) por tipo — validación de contenido real
 _SIGNATURES: dict[str, bytes] = {
-    "image/jpeg": b"\xff\xd8\xff",
-    "image/jpg": b"\xff\xd8\xff",
+    "image/jpeg": b"\xff\xd8",
+    "image/jpg": b"\xff\xd8",
     "image/png": b"\x89PNG\r\n\x1a\n",
     "image/webp": b"RIFF",  # seguido de 'WEBP' en offset 8
 }
