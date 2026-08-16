@@ -28,7 +28,10 @@ import {
   selectSafeCount,
   selectDangerCount,
   selectActiveHighAlerts,
+  HistoryItem,
+  Allergen,
 } from '@/store/appStore';
+import { getUserScanHistory, getUserProfile, mapAlertLevelToStatus } from '@/services/api';
 import { AlergiMascot } from '@/components/ui/AlergiMascot';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
@@ -104,9 +107,81 @@ function TipCarousel() {
 export default function HomeTab() {
   const router = useRouter();
   const scale = useUiScale();
-  const { allergens, history } = useAppStore();
+  const { allergens, history, setHistory, setAllergens } = useAppStore();
   const { user } = useAuthStore();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
+
+  // Sincronizar datos de la BD (historial y alérgenos del usuario) al montar
+  useEffect(() => {
+    const syncHomeData = async () => {
+      try {
+        const [historyRes, profileRes] = await Promise.allSettled([
+          getUserScanHistory(50, 0),
+          getUserProfile(),
+        ]);
+
+        if (historyRes.status === 'fulfilled' && historyRes.value?.items) {
+          const now = new Date();
+          const todayStr = now.toDateString();
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toDateString();
+
+          const mappedItems: HistoryItem[] = historyRes.value.items.map((item) => {
+            const scannedDate = new Date(item.scanned_at);
+            let dateLabel: string;
+            if (scannedDate.toDateString() === todayStr) {
+              dateLabel = 'Hoy';
+            } else if (scannedDate.toDateString() === yesterdayStr) {
+              dateLabel = 'Ayer';
+            } else {
+              dateLabel = scannedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+            }
+
+            return {
+              id: item.id,
+              backendId: item.id,
+              name: item.product_name || 'Producto escaneado',
+              brand: item.brand || '',
+              detail:
+                (item.allergens_found && item.allergens_found.length > 0)
+                  ? `${item.allergens_found.length} alérgeno${item.allergens_found.length > 1 ? 's' : ''} detectado${item.allergens_found.length > 1 ? 's' : ''}`
+                  : 'Sin alérgenos detectados',
+              time: scannedDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+              date: dateLabel,
+              dateRaw: scannedDate,
+              status: mapAlertLevelToStatus((item.result_status || item.alert_level || 'safe') as any),
+              confidence: item.confidence ? Math.round(item.confidence * 100) : 100,
+              allergens: item.allergens_found || [],
+              rawIngredients: item.raw_ingredients || '',
+            };
+          });
+          if (mappedItems.length > 0) {
+            setHistory(mappedItems);
+          }
+        }
+
+        if (profileRes.status === 'fulfilled' && profileRes.value?.allergies) {
+          const mappedAllergens: Allergen[] = profileRes.value.allergies.map((a) => ({
+            id: a.allergen_id,
+            name: a.allergen_name || a.allergen_id,
+            severity: (a.severity?.toUpperCase() === 'HIGH' ? 'HIGH' : a.severity?.toUpperCase() === 'MEDIUM' ? 'MED' : 'LOW'),
+            note: a.category_name || 'Alérgeno del catálogo',
+            icon: 'droplet' as const,
+          }));
+          if (mappedAllergens.length > 0) {
+            setAllergens(mappedAllergens);
+          }
+        }
+      } catch {
+        // En caso de error de red se mantiene el estado local
+      }
+    };
+
+    if (user) {
+      syncHomeData();
+    }
+  }, [user]);
 
   // Nombre real desde Supabase Auth
   const displayName = user?.user_metadata?.full_name || 'Bienvenido';
@@ -130,11 +205,6 @@ export default function HomeTab() {
   const recentHistory = history.slice(0, 3);
 
   // ── Drop background animation ──────────────────────────────────────────────
-  // A single 0→100 progress value drives 4 phases via interpolation:
-  //   0 →  55 : caída  (translateY 0 → 22)
-  //  55 →  68 : aplaste  (scaleX 1→1.4, scaleY 1→0.5)
-  //  68 →  82 : reforma (scales back to 1)
-  //  82 → 100 : sube  (translateY 22 → 0)
   const dropProgress = useSharedValue(0);
 
   useEffect(() => {
