@@ -110,6 +110,23 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
     )
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Captura cualquier excepción no controlada y devuelve JSON detallado."""
+    import traceback
+    tb = traceback.format_exc()
+    logger.error("Unhandled Exception at %s: %s\n%s", request.url.path, exc, tb)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error_code": "INTERNAL_SERVER_ERROR",
+            "message": f"Error interno del servidor: {str(exc)}",
+            "detail": str(exc),
+            "traceback": tb.split("\n"),
+        },
+    )
+
+
 # =====================================================================
 # Routers
 # =====================================================================
