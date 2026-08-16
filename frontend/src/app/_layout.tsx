@@ -25,8 +25,10 @@ import { useAppStore } from '@/store/appStore';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { OfflineBanner } from '@/components/offline-banner';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete
-SplashScreen.preventAutoHideAsync();
+// Prevent the splash screen from auto-hiding before asset loading is complete (solo en móvil)
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync().catch(() => {});
+}
 
 export default function RootLayout() {
   const router = useRouter();
@@ -52,22 +54,19 @@ export default function RootLayout() {
   }, []);
 
   // Ocultar SplashScreen UNA SOLA VEZ cuando las fuentes estén listas.
-  // Separado del efecto de navegación para evitar llamadas múltiples.
   const splashHidden = useRef(false);
   useEffect(() => {
     if (fontsLoaded && !splashHidden.current) {
       splashHidden.current = true;
-      SplashScreen.hideAsync().catch(() => {
-        // Ignorar el error de iOS "No native splash screen registered"
-        // que ocurre si hideAsync se llama más de una vez o fuera de contexto.
-      });
+      if (Platform.OS !== 'web') {
+        SplashScreen.hideAsync().catch(() => {});
+      }
     }
   }, [fontsLoaded]);
 
   // Gestión de navegación: redirige según el estado de sesión y onboarding.
-  // Este efecto puede ejecutarse varias veces — NO llama a hideAsync.
   useEffect(() => {
-    if (loading || !fontsLoaded || !_hasHydrated) return;
+    if (loading) return;
 
     // Check if the user is currently inside the (auth) directory
     const inAuthGroup = segments[0] === '(auth)';
@@ -83,13 +82,10 @@ export default function RootLayout() {
 
     // 2. Si ya vio el onboarding, manejar sesión
     if (!session && !inAuthGroup && !inOnboarding) {
-      // Redirect to login if there is no session
       router.replace('/(auth)/login');
     } else if (session && (inAuthGroup || inOnboarding)) {
-      // Redirect to main tabs if session exists
       router.replace('/(tabs)');
 
-      // Generar notificación de bienvenida la primera vez
       const { notifications, generateWelcomeNotification } = useNotificationStore.getState();
       const hasWelcome = notifications.some((n) => n.type === 'welcome');
       if (!hasWelcome) {
@@ -97,11 +93,7 @@ export default function RootLayout() {
         generateWelcomeNotification(name);
       }
     }
-  }, [session, loading, segments, fontsLoaded, hasSeenOnboarding, _hasHydrated]);
-
-  if (!fontsLoaded) {
-    return null;
-  }
+  }, [session, loading, segments, hasSeenOnboarding]);
 
   return (
     <ErrorBoundary>
